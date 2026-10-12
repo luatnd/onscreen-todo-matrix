@@ -55,3 +55,16 @@ final class StubURLProtocol: URLProtocol {
 
     override func stopLoading() {}
 }
+
+final class FakeJiraAPI: JiraAPI {
+    var searchResult: Result<SearchResult, JiraError> = .success(SearchResult(issues: []))
+    var searchCalls: [(jql: String, fields: [String], cap: Int)] = []
+    func myself() async throws -> JiraUser { JiraUser(displayName: "Neo", accountId: "1") }
+    func fields() async throws -> [JiraField] { [] }
+    func priorities() async throws -> [String] { [] }
+    func approximateCount(jql: String) async throws -> Int { 0 }
+    func search(jql: String, fields: [String], cap: Int) async throws -> SearchResult {
+        searchCalls.append((jql, fields, cap))
+        return try searchResult.get()
+    }
+}
