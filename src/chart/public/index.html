@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>onscreen-todo-matrix</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="pn" tabindex="0">
+  <div class="bar">
+    <select id="preset" title="JQL preset"></select>
+    <input id="q" placeholder="Search summary or key…" autocomplete="off" spellcheck="false">
+    <div class="sp">
+      <span id="sync"></span>
+      <button id="bR" title="Refetch (⌘R)">⟳</button>
+      <button id="bQ" title="Quick settings (Q)">◐</button>
+      <button id="bS" title="Settings (⌘,)">⚙</button>
+    </div>
+  </div>
+  <div id="banner"></div>
+  <div class="vp">
+    <canvas id="cv"></canvas>
+    <div id="tip"></div>
+    <div id="card"></div>
+    <div id="toast"></div>
+    <div id="setup"><p>Finish setup to see your Jira issues.</p><button id="bSetup">Open settings</button></div>
+    <div id="qs">
+      <h6>Quick settings <span class="lnk" id="qsX">✕</span></h6>
+      <div class="r"><span>Labels</span><div class="seg" data-k="labelMode"><b data-v="smart">Smart</b><b data-v="all">All</b><b data-v="key">Key</b><b data-v="off">Off</b></div></div>
+      <div class="r"><span>Stems</span><div class="seg" data-k="stemStyle"><b data-v="solid">Solid</b><b data-v="dotted">Dotted</b><b data-v="dashed">Dashed</b><b data-v="off">Off</b></div></div>
+      <div class="r"><span>Stem opacity</span><input type="range" min="5" max="80" data-k="stemOpacity"></div>
+      <div class="r"><span>Color</span><div class="seg" data-k="colorMode"><b data-v="rgb">RGB</b><b data-v="u">Urgency</b></div></div>
+      <div class="r"><span>Grid</span><div class="seg" data-k="grid"><b data-v="true">On</b><b data-v="false">Off</b></div></div>
+      <div class="r"><span>Zone names</span><div class="seg" data-k="zoneNames"><b data-v="true">On</b><b data-v="false">Off</b></div></div>
+      <div class="sub">
+        <div class="r"><span>Rotation</span><div class="seg" data-k="rotation"><b data-v="limited">Limited</b><b data-v="free">Free</b></div></div>
+        <div class="r"><span>Zoom</span><input type="range" min="50" max="300" data-k="zoom"></div>
+        <div class="r"><span id="angTxt" class="mono"></span><span><span class="lnk" id="qsPin">Set default</span> · <span class="lnk" id="qsRst">Reset</span></span></div>
+      </div>
+      <div class="sub">
+        <div class="r"><span>Panel opacity</span><input type="range" min="40" max="100" data-k="panelOpacity"></div>
+        <div class="r"><span>Always on top</span><div class="seg" data-k="alwaysOnTop"><b data-v="true">On</b><b data-v="false">Off</b></div></div>
+        <div class="r"><span>Auto refresh</span><div class="seg" data-k="refreshMinutes"><b data-v="1">1m</b><b data-v="5">5m</b><b data-v="15">15m</b><b data-v="0">Off</b></div></div>
+      </div>
+      <div class="foot">Jira, JQL &amp; field mapping → full settings (⌘,)</div>
+    </div>
+  </div>
+  <div id="next"></div>
+</div>
+<script src="chart.js"></script>
+</body>
+</html>
