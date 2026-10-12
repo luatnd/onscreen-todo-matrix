@@ -226,7 +226,8 @@ $('preset').onchange = (e) => post({ type: 'selectPreset', id: e.target.value })
 
 // ---------- keyboard ----------
 window.addEventListener('keydown', (e) => {
-  if (!st.state || document.activeElement === q || document.activeElement === $('preset')) return;
+  if (!st.state || document.activeElement === q) return;
+  if (document.activeElement === $('preset')) { if (e.key !== 'Escape') return; $('pn').focus(); }
   const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
   if (e.key === 'Tab') { e.preventDefault(); return step(e.shiftKey ? -1 : 1); }
   if (e.key === 'Escape') {
