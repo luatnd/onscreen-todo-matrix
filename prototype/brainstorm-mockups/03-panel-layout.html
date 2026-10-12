@@ -1,0 +1,118 @@
+<h2>2. Inside the floating panel: what surrounds the chart?</h2>
+<p class="subtitle">Each mock is the panel at about 560×420, sitting on top of your other apps. Hover and click behavior is described under each one.</p>
+
+<style>
+  .pn { background:#0f1420; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,.5); color:#9aa6bd; font:11px -apple-system,sans-serif; overflow:hidden; display:flex; flex-direction:column; }
+  .pn .bar { height:26px; display:flex; align-items:center; gap:8px; padding:0 10px; background:#131a28; border-bottom:1px solid #1e2636; }
+  .pn .dots { display:flex; gap:5px; } .pn .dots i { width:9px; height:9px; border-radius:50%; display:block; }
+  .pn .chip { background:#1e2636; color:#c9d2e3; padding:2px 7px; border-radius:10px; font-size:10px; }
+  .pn .sp { margin-left:auto; display:flex; gap:8px; align-items:center; font-size:10px; }
+  .pn .body { flex:1; display:flex; min-height:0; }
+  .pn .chart { flex:1; position:relative; }
+  .pn .floor { position:absolute; left:12%; right:12%; bottom:12%; height:48%; transform:perspective(260px) rotateX(50deg);
+               background:
+                 linear-gradient(90deg, rgba(90,130,220,.2) 50%, rgba(200,90,90,.1) 50%) bottom/100% 50% no-repeat,
+                 linear-gradient(90deg, rgba(70,180,120,.22) 50%, rgba(160,160,160,.08) 50%) top/100% 50% no-repeat;
+               border:1px solid rgba(255,255,255,.25); }
+  .pn .d { position:absolute; width:9px; height:9px; border-radius:50%; border:1px solid rgba(255,255,255,.5); }
+  .pn .lbl { position:absolute; font-size:9px; color:#e8ecf4; }
+  .pn .side { width:150px; background:#131a28; border-left:1px solid #1e2636; padding:8px; line-height:1.7; font-size:10px; }
+  .pn .side h5 { margin:0 0 2px; font-size:10px; color:#f4c542; }
+  .pn .side .f { color:#ff8a8a; }
+  .pn .row { display:flex; gap:6px; align-items:center; }
+  .pn .sw { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .pn .next { padding:5px 10px; border-top:1px solid #1e2636; font-size:10px; } .pn .next b { color:#f4c542; }
+  .pn .card { position:absolute; background:#1e2636; color:#e8ecf4; border-radius:6px; padding:7px 9px; font-size:10px; line-height:1.5; box-shadow:0 4px 14px rgba(0,0,0,.5); width:170px; }
+  .pn .card .k { color:#9aa6bd; } .pn .card .btn { display:inline-block; margin-top:4px; background:#3b82f6; color:#fff; padding:1px 6px; border-radius:4px; }
+  .pn .list { border-top:1px solid #1e2636; max-height:150px; overflow:hidden; font-size:10px; }
+  .pn .list .it { display:flex; gap:8px; padding:3px 10px; border-bottom:1px solid #161d2b; align-items:center; }
+  .pn .list .it span:last-child { margin-left:auto; color:#6b7895; }
+</style>
+
+<div class="cards" style="grid-template-columns:1fr">
+
+  <div class="card" data-choice="a-chart-first" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;aspect-ratio:auto;padding:14px;background:linear-gradient(135deg,#3a4a6b,#6b5a7a)">
+      <div class="pn" style="width:560px;height:420px;max-width:100%;margin:auto">
+        <div class="bar"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+          <span class="chip">My open work ▾</span><div class="sp">synced 2m ago ⟳ &nbsp;⚙</div></div>
+        <div class="body"><div class="chart">
+          <div class="floor"></div>
+          <div class="d" style="left:28%;top:34%;background:#fff;box-shadow:0 0 10px #f55"></div><div class="lbl" style="left:31%;top:33%">① SEC-5</div>
+          <div class="d" style="left:36%;top:40%;background:#fdf"></div><div class="lbl" style="left:39%;top:39%">② PAY-412</div>
+          <div class="d" style="left:22%;top:55%;background:#bdf"></div>
+          <div class="d" style="left:62%;top:50%;background:#e6e"></div>
+          <div class="d" style="left:70%;top:66%;background:#555"></div>
+          <div class="d" style="left:48%;top:70%;background:#5c5"></div>
+          <div class="card" style="left:44%;top:16%"><b>SEC-5</b> Rotate leaked key<br><span class="k">Highest · 1 SP · due today · In Progress</span><br><span class="btn">⌘O Open in Jira</span></div>
+        </div></div>
+        <div class="next"><b>Next:</b> ① SEC-5 Rotate leaked key · ② PAY-412 Fix refund webhook · ③ OPS-77 Rotate certs</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Chart-first (recommended)</h3>
+      <p>The chart fills the panel. A thin top bar has the saved-filter dropdown (JQL presets), last sync time, refresh and settings. A one-line <b>Next</b> strip sits at the bottom. Hovering a dot shows a tooltip, and clicking shows a detail card (shown above) with <b>⌘O Open in Jira</b>. Nothing else takes space away from the chart.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b-chart-sidebar" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;aspect-ratio:auto;padding:14px;background:linear-gradient(135deg,#3a4a6b,#6b5a7a)">
+      <div class="pn" style="width:560px;height:420px;max-width:100%;margin:auto">
+        <div class="bar"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+          <span class="chip">My open work ▾</span><div class="sp">synced 2m ago ⟳ &nbsp;⚙ &nbsp;◧</div></div>
+        <div class="body"><div class="chart">
+          <div class="floor"></div>
+          <div class="d" style="left:26%;top:34%;background:#fff;box-shadow:0 0 10px #f55"></div>
+          <div class="d" style="left:34%;top:40%;background:#fdf"></div>
+          <div class="d" style="left:20%;top:55%;background:#bdf"></div>
+          <div class="d" style="left:60%;top:50%;background:#e6e"></div>
+          <div class="d" style="left:68%;top:66%;background:#555"></div>
+          <div class="d" style="left:46%;top:70%;background:#5c5"></div>
+        </div>
+        <div class="side">
+          <h5>NEXT</h5>
+          <div class="row"><span class="sw" style="background:#fff"></span>SEC-5 Rotate key</div>
+          <div class="row"><span class="sw" style="background:#fdf"></span>PAY-412 Refund hook</div>
+          <div class="row"><span class="sw" style="background:#fdd"></span>OPS-77 Certs</div>
+          <h5 style="margin-top:8px;color:#ff8a8a">ON FIRE</h5>
+          <div class="row f"><span class="sw" style="background:#e6e"></span>PAY-398 PCI audit</div>
+          <h5 style="margin-top:8px;color:#9aa6bd">FILTER</h5>
+          <div>☑ PAY ☑ OPS ☑ WEB<br>☐ show Done</div>
+        </div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Chart + sidebar</h3>
+      <p>A right sidebar shows Next 3, On fire and quick project filters. The ◧ button or ⌘\ collapses it. Lists are easier to scan than labels in 3D, but the chart loses about 27% of its width in an already small panel.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c-list-first" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;aspect-ratio:auto;padding:14px;background:linear-gradient(135deg,#3a4a6b,#6b5a7a)">
+      <div class="pn" style="width:340px;height:520px;max-width:100%;margin:auto">
+        <div class="bar"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+          <span class="chip">My open work ▾</span><div class="sp">⟳ ⚙</div></div>
+        <div class="body" style="flex:0 0 260px"><div class="chart">
+          <div class="floor"></div>
+          <div class="d" style="left:26%;top:34%;background:#fff;box-shadow:0 0 10px #f55"></div>
+          <div class="d" style="left:34%;top:40%;background:#fdf"></div>
+          <div class="d" style="left:60%;top:50%;background:#e6e"></div>
+          <div class="d" style="left:46%;top:70%;background:#5c5"></div>
+        </div></div>
+        <div class="list">
+          <div class="it"><span class="sw" style="background:#fff"></span>① SEC-5 Rotate leaked key<span>today</span></div>
+          <div class="it"><span class="sw" style="background:#fdf"></span>② PAY-412 Fix refund webhook<span>2d</span></div>
+          <div class="it"><span class="sw" style="background:#fdd"></span>③ OPS-77 Rotate prod certs<span>3d</span></div>
+          <div class="it"><span class="sw" style="background:#e6e"></span>PAY-398 PCI audit evidence<span>4d</span></div>
+          <div class="it"><span class="sw" style="background:#bdf"></span>DATA-12 Weekly KPI query<span>1w</span></div>
+          <div class="it"><span class="sw" style="background:#5c5"></span>HR-2 Onboarding checklist<span>—</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Tall panel: chart on top, ranked list below</h3>
+      <p>A narrow, tall panel you can dock at the screen edge. The chart on top shows the shape, and a list ranked by score, colored the same as the dots, shows the order. Selecting a row highlights its dot and the other way round. This works well beside a code editor, but the chart is the smallest of the three.</p>
+    </div>
+  </div>
+</div>
+<p style="font-size:12px;opacity:.75;margin-top:6px">Click a card to pick, then reply in the terminal. Combinations are fine, for example "A, but with the C list toggleable".</p>

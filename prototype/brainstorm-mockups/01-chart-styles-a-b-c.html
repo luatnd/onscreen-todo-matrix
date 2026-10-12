@@ -1,0 +1,164 @@
+<h2>How should the 3 dimensions be drawn?</h2>
+<p class="subtitle">Same 18 sample Jira issues in all three. Drag inside A and C to rotate (clamped to a small angle). Hover a dot for its key. Numbered gold badges = top-3 "do next"; red glow = on fire (high value + high urgency).</p>
+
+<style>
+  .cards { grid-template-columns: 1fr !important; max-width: 760px; }
+  .card-image { display:block !important; aspect-ratio:auto !important; }
+  .vp { background:#0f1420; border-radius:8px; position:relative; }
+  .vp canvas { display:block; width:100%; height:340px; cursor:grab; }
+  .vp canvas:active { cursor:grabbing; }
+  .vp .tip { position:absolute; pointer-events:none; background:#1e2636; color:#e8ecf4; font:12px/1.3 -apple-system,sans-serif; padding:4px 7px; border-radius:4px; display:none; white-space:nowrap; }
+  .next { font:12px -apple-system,sans-serif; color:#9aa6bd; padding:6px 10px 8px; background:#0f1420; border-top:1px solid #1e2636; border-radius:0 0 8px 8px; }
+  .next b { color:#f4c542; }
+  .legend { font-size:12px; opacity:.75; margin-top:6px; }
+</style>
+
+<div class="cards">
+  <div class="card" data-choice="a-pure-3d" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="vp"><canvas id="cA"></canvas><div class="tip"></div></div><div class="next" id="nA"></div></div>
+    <div class="card-body">
+      <h3>A. Pure 3D scatter</h3>
+      <p>X value → right, Y effort → back, Z urgency → up. Floating dots, axis box only. Most literal; depth is hardest to read.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b-2d-encoded" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="vp"><canvas id="cB" style="cursor:default"></canvas><div class="tip"></div></div><div class="next" id="nB"></div></div>
+    <div class="card-body">
+      <h3>B. 2D Value × Effort, urgency as color/size</h3>
+      <p>Flat Action Priority matrix. Urgency shown by color, dot size, and a ring when critical. No rotation. Fastest read, but urgency is "only" a color.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c-3d-stems" onclick="toggleSelect(this)">
+    <div class="card-image"><div class="vp"><canvas id="cC"></canvas><div class="tip"></div></div><div class="next" id="nC"></div></div>
+    <div class="card-body">
+      <h3>C. 3D "stems" over a quadrant floor (recommended)</h3>
+      <p>Floor = Value × Effort with the 4 Action-Priority zones. Each task is a stem whose height = urgency, so the shadow on the floor tells you exactly where it sits. Small clamped orbit.</p>
+    </div>
+  </div>
+</div>
+<p class="legend">Color scale (all options): <span style="color:#5b7bb5">■ low urgency</span> → <span style="color:#e0a030">■ medium</span> → <span style="color:#e5484d">■ high</span>. Click a card to pick; tell me in the terminal what to change.</p>
+
+<script>
+(function(){
+  // sample data: v=value, e=effort, u=urgency, all 0..1
+  const T = [
+    ["PAY-412","Fix refund webhook",.92,.20,.95],["PAY-398","PCI audit evidence",.85,.70,.88],
+    ["WEB-221","Checkout copy tweak",.40,.10,.60],["WEB-230","Dark mode",.35,.65,.15],
+    ["OPS-77","Rotate prod certs",.75,.15,.80],["OPS-81","Migrate logging stack",.70,.90,.30],
+    ["DATA-12","Weekly KPI query",.55,.25,.45],["DATA-19","Rebuild warehouse",.80,.95,.20],
+    ["WEB-240","Fix flaky e2e test",.30,.30,.50],["PAY-420","Retry policy doc",.25,.20,.10],
+    ["CORE-9","Upgrade Go 1.24",.50,.55,.35],["CORE-14","Remove dead flags",.20,.40,.05],
+    ["MOB-33","Push notif bug",.65,.35,.70],["MOB-40","Tablet layout",.45,.80,.25],
+    ["SEC-5","Rotate leaked key",.95,.10,1.0],["HR-2","Onboarding checklist",.30,.15,.40],
+    ["OPS-90","Cost report Q4",.60,.45,.55],["WEB-251","Landing A/B test",.68,.50,.20]
+  ].map(r=>({k:r[0],t:r[1],v:r[2],e:r[3],u:r[4]}));
+  T.forEach(d=>{ d.s = d.v*(0.5+d.u)/(0.3+d.e); d.fire = d.v>=.7 && d.u>=.8; });
+  const top = [...T].sort((a,b)=>b.s-a.s).slice(0,3); top.forEach((d,i)=>d.rank=i+1);
+  const nextHTML = '<b>Next:</b> ' + top.map(d=>`${d.rank}. ${d.k} ${d.t}`).join(' &nbsp;·&nbsp; ');
+  ['nA','nB','nC'].forEach(id=>document.getElementById(id).innerHTML = nextHTML);
+
+  function col(u,a){ // low blue -> amber -> red
+    const s=[[91,123,181],[224,160,48],[229,72,77]];
+    const t=u<.5?u/.5:(u-.5)/.5, A=u<.5?s[0]:s[1], B=u<.5?s[1]:s[2];
+    const c=A.map((x,i)=>Math.round(x+(B[i]-x)*t));
+    return `rgba(${c[0]},${c[1]},${c[2]},${a==null?1:a})`;
+  }
+  function setup(cv){
+    const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=cv.clientHeight;
+    cv.width=w*dpr; cv.height=h*dpr; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    return {g,w,h};
+  }
+  function badge(g,x,y,n){
+    g.fillStyle='#f4c542'; g.beginPath(); g.arc(x+11,y-11,8,0,7); g.fill();
+    g.fillStyle='#0f1420'; g.font='bold 11px -apple-system,sans-serif'; g.textAlign='center'; g.textBaseline='middle';
+    g.fillText(n,x+11,y-10.5);
+  }
+  function dot(g,x,y,r,d){
+    if(d.fire){ g.shadowColor='#ff3b3b'; g.shadowBlur=16; }
+    g.fillStyle=col(d.u); g.beginPath(); g.arc(x,y,r,0,7); g.fill(); g.shadowBlur=0;
+    g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1; g.stroke();
+    if(d.rank) badge(g,x,y,d.rank);
+    if(d.rank||d.fire){ g.fillStyle='#e8ecf4'; g.font='11px -apple-system,sans-serif'; g.textAlign='left'; g.textBaseline='middle'; g.fillText(d.k,x+r+4+(d.rank?14:0),y+1); }
+  }
+  function hover(cv,pts){
+    const tip=cv.parentNode.querySelector('.tip');
+    cv.addEventListener('mousemove',ev=>{
+      const r=cv.getBoundingClientRect(), mx=ev.clientX-r.left, my=ev.clientY-r.top;
+      let best=null,bd=14; pts().forEach(p=>{const dd=Math.hypot(p.x-mx,p.y-my); if(dd<bd){bd=dd;best=p;}});
+      if(best){ tip.style.display='block'; tip.style.left=(best.x+12)+'px'; tip.style.top=(best.y+10)+'px';
+        tip.textContent=`${best.d.k} · ${best.d.t} · V${(best.d.v*5).toFixed(0)} E${(best.d.e*5).toFixed(0)} U${(best.d.u*5).toFixed(0)}`; }
+      else tip.style.display='none';
+    });
+    cv.addEventListener('mouseleave',()=>tip.style.display='none');
+  }
+
+  // ---------- 3D (A and C) ----------
+  function make3D(id, stems){
+    const cv=document.getElementById(id); let {g,w,h}=setup(cv);
+    const Y0=-32, P0=24, YR=22, PR=12; let yaw=Y0, pitch=P0, proj=[];
+    function P(x,y,z){ // x value, y effort(depth), z urgency(up) in 0..1
+      const px=x-.5, py=z-.5, pz=y-.5, a=yaw*Math.PI/180, b=pitch*Math.PI/180;
+      const X=px*Math.cos(a)-pz*Math.sin(a), Z1=px*Math.sin(a)+pz*Math.cos(a);
+      const Y=py*Math.cos(b)+Z1*Math.sin(b), Z=-py*Math.sin(b)+Z1*Math.cos(b);
+      const s=2.6/(2.6+Z), sc=Math.min(w,h)*.5;
+      return {x:w/2+X*s*sc, y:h/2+10-Y*s*sc, z:Z, s};
+    }
+    function line(a,b,c,lw){ g.strokeStyle=c; g.lineWidth=lw||1; g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); }
+    function poly(ps,fill){ g.fillStyle=fill; g.beginPath(); ps.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)); g.closePath(); g.fill(); }
+    function txt(p,s,c,al){ g.fillStyle=c; g.font='11px -apple-system,sans-serif'; g.textAlign=al||'center'; g.textBaseline='middle'; g.fillText(s,p.x,p.y); }
+    function draw(){
+      g.clearRect(0,0,w,h);
+      if(stems){
+        const Q=[[.5,1,0,.5,'rgba(70,180,120,.16)','Quick wins'],[.5,1,.5,1,'rgba(90,130,220,.13)','Major projects'],
+                 [0,.5,0,.5,'rgba(160,160,160,.08)','Fill-ins'],[0,.5,.5,1,'rgba(200,90,90,.10)','Thankless']];
+        Q.forEach(q=>{ poly([P(q[0],q[2],0),P(q[1],q[2],0),P(q[1],q[3],0),P(q[0],q[3],0)],q[4]);
+          txt(P((q[0]+q[1])/2,(q[2]+q[3])/2,0),q[5],'rgba(232,236,244,.35)'); });
+        for(let i=0;i<=4;i++){ line(P(i/4,0,0),P(i/4,1,0),'rgba(255,255,255,.06)'); line(P(0,i/4,0),P(1,i/4,0),'rgba(255,255,255,.06)'); }
+      }
+      // axis box edges
+      const c='rgba(255,255,255,.18)';
+      [[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[1,0,0,1,1,0],[0,1,0,1,1,0],[0,1,0,0,1,1],[1,1,0,1,1,1],[0,1,1,1,1,1]]
+        .forEach(e=>line(P(e[0],e[1],e[2]),P(e[3],e[4],e[5]),c));
+      txt(P(1.08,0,0),'Value →','#9aa6bd','left'); txt(P(0,1.1,0),'Effort →','#9aa6bd'); txt(P(0,0,1.08),'↑ Urgency','#9aa6bd');
+      proj = T.map(d=>({d, p:P(d.v,d.e,d.u), f:P(d.v,d.e,0)})).sort((a,b)=>b.p.z-a.p.z);
+      if(stems) proj.forEach(o=>{ g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(o.f.x,o.f.y,5*o.f.s,2.4*o.f.s,0,0,7); g.fill();
+        line(o.f,o.p,col(o.d.u,.55),2); });
+      proj.forEach(o=>dot(g,o.p.x,o.p.y,(stems?6:7)*o.p.s,o.d));
+    }
+    let drag=null;
+    cv.addEventListener('mousedown',e=>drag={x:e.clientX,y:e.clientY,yaw,pitch});
+    window.addEventListener('mouseup',()=>drag=null);
+    window.addEventListener('mousemove',e=>{ if(!drag) return;
+      yaw=Math.max(Y0-YR,Math.min(Y0+YR,drag.yaw+(e.clientX-drag.x)*.3));
+      pitch=Math.max(P0-PR,Math.min(P0+PR,drag.pitch+(e.clientY-drag.y)*.3)); draw(); });
+    cv.addEventListener('dblclick',()=>{yaw=Y0;pitch=P0;draw();});
+    window.addEventListener('resize',()=>{({g,w,h}=setup(cv)); draw();});
+    hover(cv,()=>proj.map(o=>({x:o.p.x,y:o.p.y,d:o.d})));
+    draw();
+  }
+
+  // ---------- 2D (B) ----------
+  function make2D(id){
+    const cv=document.getElementById(id); let {g,w,h}=setup(cv), pts=[];
+    function draw(){
+      g.clearRect(0,0,w,h); const L=50,R=w-80,Tp=20,B=h-36;
+      const X=v=>L+v*(R-L), Y=e=>Tp+e*(B-Tp);
+      const Q=[[.5,1,0,.5,'rgba(70,180,120,.16)','Quick wins'],[.5,1,.5,1,'rgba(90,130,220,.13)','Major projects'],
+               [0,.5,0,.5,'rgba(160,160,160,.08)','Fill-ins'],[0,.5,.5,1,'rgba(200,90,90,.10)','Thankless']];
+      Q.forEach(q=>{ g.fillStyle=q[4]; g.fillRect(X(q[0]),Y(q[2]),X(q[1])-X(q[0]),Y(q[3])-Y(q[2]));
+        g.fillStyle='rgba(232,236,244,.35)'; g.font='11px -apple-system,sans-serif'; g.textAlign='center'; g.fillText(q[5],(X(q[0])+X(q[1]))/2,Y(q[2])+12); });
+      g.fillStyle='#9aa6bd'; g.textAlign='center'; g.fillText('Value →',(L+R)/2,h-14);
+      g.save(); g.translate(18,(Tp+B)/2); g.rotate(-Math.PI/2); g.fillText('Effort →',0,0); g.restore();
+      pts = T.map(d=>({x:X(d.v),y:Y(d.e),d})).sort((a,b)=>a.d.u-b.d.u);
+      pts.forEach(p=>{ if(p.d.u>=.8){ g.strokeStyle=col(p.d.u,.6); g.lineWidth=2; g.beginPath(); g.arc(p.x,p.y,5+p.d.u*9+5,0,7); g.stroke(); }
+        dot(g,p.x,p.y,4+p.d.u*8,p.d); });
+    }
+    window.addEventListener('resize',()=>{({g,w,h}=setup(cv)); draw();});
+    hover(cv,()=>pts); draw();
+  }
+
+  make3D('cA',false); make2D('cB'); make3D('cC',true);
+})();
+</script>

@@ -1,0 +1,89 @@
+<h2>1. Window form: what appears when you press the shortcut?</h2>
+<p class="subtitle">Each frame below is your Mac screen. The dark area marks where the matrix appears. The goal is to see the whole picture in a 2-second glance, then get back to work.</p>
+
+<style>
+  .desk { position:relative; height:230px; border-radius:8px; overflow:hidden;
+          background:linear-gradient(135deg,#3a4a6b,#6b5a7a 60%,#8a6a6a); font:11px -apple-system,sans-serif; }
+  .menubar { height:14px; background:rgba(240,240,245,.85); display:flex; align-items:center; padding:0 8px; gap:10px; color:#222; font-size:9px; }
+  .menubar .r { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .app { position:absolute; background:rgba(245,245,248,.92); border-radius:5px; box-shadow:0 2px 8px rgba(0,0,0,.3); color:#333; padding:6px; font-size:9px; }
+  .mx { position:absolute; background:#0f1420; border-radius:8px; box-shadow:0 8px 30px rgba(0,0,0,.55); color:#9aa6bd; overflow:hidden; }
+  .mx .floor { position:absolute; left:15%; right:15%; bottom:14%; height:45%; transform:perspective(200px) rotateX(48deg);
+               background:
+                 linear-gradient(90deg, rgba(70,180,120,.25) 50%, rgba(90,130,220,.2) 50%) top/100% 50% no-repeat,
+                 linear-gradient(90deg, rgba(160,160,160,.08) 50%, rgba(200,90,90,.1) 50%) bottom/100% 50% no-repeat;
+               border:1px solid rgba(255,255,255,.25); }
+  .mx .d { position:absolute; width:7px; height:7px; border-radius:50%; }
+  .mx .t { position:absolute; top:5px; left:8px; font-size:9px; color:#e8ecf4; }
+  .mx .side { position:absolute; top:0; right:0; bottom:0; width:24%; background:#151b29; border-left:1px solid #1e2636; padding:6px; font-size:8px; line-height:1.6; }
+  .mx .side b { color:#f4c542; }
+  .dim { position:absolute; inset:14px 0 0 0; background:rgba(5,8,15,.55); backdrop-filter:blur(3px); }
+  .pop-arrow { position:absolute; width:10px; height:10px; background:#0f1420; transform:rotate(45deg); }
+</style>
+
+<div class="cards" style="grid-template-columns:1fr">
+  <div class="card" data-choice="a-floating-panel" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;aspect-ratio:auto">
+      <div class="desk">
+        <div class="menubar"><b></b> Code &nbsp; File &nbsp; Edit<div class="r">◈ &nbsp; Wi-Fi &nbsp; 10:42</div></div>
+        <div class="app" style="left:4%;top:24px;width:58%;height:170px">VS Code: your work…</div>
+        <div class="mx" style="right:3%;top:30px;width:40%;height:180px">
+          <div class="t">onscreen-todo-matrix ⌥Space</div>
+          <div class="floor"></div>
+          <div class="d" style="left:30%;top:40%;background:#fff;box-shadow:0 0 8px #f55"></div>
+          <div class="d" style="left:45%;top:48%;background:#e6e"></div>
+          <div class="d" style="left:62%;top:60%;background:#5c5"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Floating panel</h3>
+      <p>A resizable window that stays on top of other apps, like a HUD. It stays open while you work beside it. The shortcut shows or hides it. Your apps are fully visible, but the matrix is smaller.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b-fullscreen-overlay" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;aspect-ratio:auto">
+      <div class="desk">
+        <div class="menubar"><b></b> Code &nbsp; File &nbsp; Edit<div class="r">◈ &nbsp; Wi-Fi &nbsp; 10:42</div></div>
+        <div class="app" style="left:4%;top:24px;width:58%;height:170px">VS Code: your work…</div>
+        <div class="dim"></div>
+        <div class="mx" style="left:6%;right:6%;top:24px;bottom:10px">
+          <div class="t">onscreen-todo-matrix · Esc to dismiss</div>
+          <div class="floor" style="right:28%"></div>
+          <div class="d" style="left:25%;top:42%;background:#fff;box-shadow:0 0 8px #f55"></div>
+          <div class="d" style="left:40%;top:50%;background:#e6e"></div>
+          <div class="d" style="left:55%;top:62%;background:#5c5"></div>
+          <div class="side"><b>Next</b><br>1 SEC-5<br>2 PAY-412<br>3 OPS-77<br><br><b>On fire</b><br>PAY-398</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Full-screen overlay (Spotlight-style)</h3>
+      <p>The shortcut covers the screen with a large matrix over a blurred background. Esc or the shortcut dismisses it. This gives the biggest view and fits a glance-then-go habit. You can't work beside it.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c-hybrid" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;aspect-ratio:auto">
+      <div class="desk">
+        <div class="menubar"><b></b> Code &nbsp; File &nbsp; Edit<div class="r"><span style="background:#0f1420;color:#fff;padding:0 3px;border-radius:2px">◈</span> &nbsp; Wi-Fi &nbsp; 10:42</div></div>
+        <div class="app" style="left:4%;top:24px;width:58%;height:170px">VS Code: your work…</div>
+        <div class="dim" style="background:rgba(5,8,15,.35)"></div>
+        <div class="mx" style="left:12%;right:12%;top:26px;bottom:14px">
+          <div class="t">onscreen-todo-matrix · Esc dismiss · ⌘P pin as panel</div>
+          <div class="floor" style="right:28%"></div>
+          <div class="d" style="left:25%;top:42%;background:#fff;box-shadow:0 0 8px #f55"></div>
+          <div class="d" style="left:40%;top:50%;background:#e6e"></div>
+          <div class="d" style="left:55%;top:62%;background:#5c5"></div>
+          <div class="side"><b>Next</b><br>1 SEC-5<br>2 PAY-412<br>3 OPS-77<br><br><b>On fire</b><br>PAY-398</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Hybrid: large overlay by default, can be pinned as a floating panel (recommended)</h3>
+      <p>The shortcut opens a large centered overlay for the 2-second glance (B). One key (⌘P) pins it, so it shrinks into the always-on-top floating panel (A) and stays while you work. There's a menu-bar icon and no Dock icon. The app remembers which mode you used last.</p>
+    </div>
+  </div>
+</div>
+<p class="legend" style="font-size:12px;opacity:.75;margin-top:6px">Click a card to pick, then reply in the terminal. Anything you write about size, position or transparency is welcome.</p>

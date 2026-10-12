@@ -1,0 +1,278 @@
+<h2>3b. Panel with quick settings (◐ or Q), dotted stems</h2>
+<p class="subtitle">This is a chart-first floating panel with the proposed shortcuts. Click inside the panel first so it has keyboard focus. Some browser shortcuts like ⌘R may still win in this tab, so every action also has a button in the cheat sheet below.</p>
+
+<style>
+  .stage { background:linear-gradient(135deg,#3a4a6b,#6b5a7a 60%,#8a6a6a); border-radius:10px; padding:22px; position:relative; min-height:560px; }
+  .pn { width:640px; max-width:100%; height:500px; margin:auto; background:#0f1420; border-radius:10px; box-shadow:0 10px 36px rgba(0,0,0,.55);
+        color:#9aa6bd; font:11px -apple-system,sans-serif; display:flex; flex-direction:column; overflow:hidden; transition:opacity .18s, transform .18s; outline:none; }
+  .pn.hidden { opacity:0; transform:scale(.97); pointer-events:none; }
+  .bar { height:30px; display:flex; align-items:center; gap:8px; padding:0 10px; background:#131a28; border-bottom:1px solid #1e2636; flex:none; }
+  .lights { display:flex; gap:5px; } .lights i { width:10px; height:10px; border-radius:50%; display:block; }
+  .chip { background:#1e2636; color:#c9d2e3; padding:3px 8px; border-radius:10px; font-size:10px; }
+  .bar .sp { margin-left:auto; display:flex; gap:10px; align-items:center; }
+  .bar button { background:none; border:none; color:#9aa6bd; cursor:pointer; font-size:13px; padding:0 2px; }
+  #q { display:none; background:#1e2636; border:1px solid #3b82f6; color:#e8ecf4; border-radius:5px; padding:2px 6px; font-size:11px; width:170px; outline:none; }
+  .vp { flex:1; position:relative; min-height:0; }
+  .vp canvas { display:block; width:100%; height:100%; cursor:grab; }
+  .tip { position:absolute; pointer-events:none; background:#1e2636; color:#e8ecf4; font-size:11px; padding:4px 7px; border-radius:4px; display:none; white-space:nowrap; z-index:3; }
+  .dcard { position:absolute; display:none; background:#1e2636; color:#e8ecf4; border-radius:8px; padding:9px 11px; font-size:11px; line-height:1.55; width:230px;
+          box-shadow:0 6px 20px rgba(0,0,0,.55); z-index:4; border:1px solid #2b3550; }
+  .dcard .k { color:#9aa6bd; font-size:10px; } .dcard .row { display:flex; justify-content:space-between; color:#9aa6bd; font-size:10px; }
+  .dcard .row b { color:#e8ecf4; font-weight:500; }
+  .dcard .open { display:inline-block; margin-top:6px; background:#3b82f6; color:#fff; padding:2px 8px; border-radius:4px; cursor:pointer; }
+  .next { padding:6px 10px; border-top:1px solid #1e2636; font-size:10.5px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .next b { color:#f4c542; } .next span { cursor:pointer; } .next span:hover { color:#e8ecf4; }
+  .qs { position:absolute; top:8px; right:8px; width:250px; background:rgba(22,28,42,.97); border:1px solid #2b3550; border-radius:9px; padding:10px 12px;
+        box-shadow:0 8px 24px rgba(0,0,0,.55); z-index:6; display:none; font-size:11px; color:#c9d2e3; }
+  .qs h6 { margin:0 0 8px; font-size:11px; color:#e8ecf4; display:flex; justify-content:space-between; }
+  .qs .r { display:flex; align-items:center; justify-content:space-between; margin:7px 0; gap:8px; }
+  .qs .r > span { color:#9aa6bd; white-space:nowrap; }
+  .seg { display:flex; background:#0f1420; border-radius:6px; padding:2px; gap:2px; }
+  .seg b { font-weight:500; padding:2px 7px; border-radius:4px; cursor:pointer; color:#9aa6bd; font-size:10.5px; }
+  .seg b.on { background:#3b82f6; color:#fff; }
+  .qs input[type=range] { width:110px; accent-color:#3b82f6; }
+  .qs .sub { border-top:1px solid #2b3550; margin-top:8px; padding-top:8px; }
+  .qs .lnk { color:#8fb8ff; cursor:pointer; } .qs .lnk:hover { text-decoration:underline; }
+  .toast { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); background:#e8ecf4; color:#0f1420; padding:5px 10px; border-radius:6px; font-size:11px;
+           opacity:0; transition:opacity .2s; pointer-events:none; z-index:5; white-space:nowrap; }
+  .hint { position:absolute; left:0; right:0; top:50%; text-align:center; color:#e8ecf4; font:13px -apple-system,sans-serif; opacity:0; pointer-events:none; transition:opacity .2s; }
+  .keys { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:6px 18px; margin-top:14px; font-size:12.5px; }
+  .keys div { display:flex; gap:8px; align-items:center; }
+  .keys kbd { background:#2a3142; color:#e8ecf4; border-radius:4px; padding:1px 6px; font:11px ui-monospace,Menlo,monospace; min-width:52px; text-align:center; cursor:pointer; border:1px solid #3a4258; }
+  .keys kbd:hover { border-color:#3b82f6; }
+</style>
+
+<div class="stage">
+  <div class="pn" id="pn" tabindex="0">
+    <div class="bar">
+      <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+      <span class="chip">My open work ▾</span>
+      <input id="q" placeholder="Search summary or key…">
+      <div class="sp"><span id="sync">synced just now</span><button id="bR" title="Refetch (⌘R)">⟳</button><button id="bQ" title="Quick settings (Q)">◐</button><button title="Full settings (⌘,)">⚙</button></div>
+    </div>
+    <div class="vp"><canvas id="cv"></canvas><div class="tip"></div><div class="dcard" id="card"></div><div class="toast" id="toast"></div>
+      <div class="qs" id="qs">
+        <h6>Quick settings <span class="lnk" id="qsX">✕</span></h6>
+        <div class="r"><span>Labels</span><div class="seg" data-k="labelMode"><b data-v="smart">Smart</b><b data-v="all">All</b><b data-v="key">Key</b><b data-v="off">Off</b></div></div>
+        <div class="r"><span>Stems</span><div class="seg" data-k="stemStyle"><b data-v="solid">Solid</b><b data-v="dotted">Dotted</b><b data-v="dashed">Dashed</b><b data-v="off">Off</b></div></div>
+        <div class="r"><span>Stem opacity</span><input type="range" min="5" max="80" data-k="stemAlpha"></div>
+        <div class="r"><span>Color</span><div class="seg" data-k="colorMode"><b data-v="rgb">RGB</b><b data-v="u">Urgency</b></div></div>
+        <div class="r"><span>Grid</span><div class="seg" data-k="showGrid"><b data-v="1">On</b><b data-v="0">Off</b></div></div>
+        <div class="r"><span>Zone names</span><div class="seg" data-k="showZones"><b data-v="1">On</b><b data-v="0">Off</b></div></div>
+        <div class="sub">
+        <div class="r"><span>Rotation</span><div class="seg" data-k="free"><b data-v="0">Limited</b><b data-v="1">Free</b></div></div>
+        <div class="r"><span>Zoom</span><input type="range" min="50" max="300" data-k="zoom"></div>
+        <div class="r"><span id="angTxt" style="font:10px ui-monospace,Menlo,monospace"></span><span><span class="lnk" id="qsPin">Set default</span> · <span class="lnk" id="qsRst">Reset</span></span></div>
+        </div>
+        <div class="sub">
+        <div class="r"><span>Panel opacity</span><input type="range" min="40" max="100" data-k="panelAlpha"></div>
+        <div class="r"><span>Always on top</span><div class="seg" data-k="onTop"><b data-v="1">On</b><b data-v="0">Off</b></div></div>
+        <div class="r"><span>Auto refresh</span><div class="seg" data-k="refresh"><b data-v="1">1m</b><b data-v="5">5m</b><b data-v="15">15m</b><b data-v="0">Off</b></div></div>
+        </div>
+        <div style="margin-top:6px;color:#6b7895;font-size:10px">Jira, JQL &amp; field mapping → full settings (⌘,)</div>
+      </div></div>
+    <div class="next" id="next"></div>
+  </div>
+  <div class="hint" id="hint">Panel hidden. Press ⌥Space or click "Show/hide" below.</div>
+</div>
+
+<div class="keys">
+  <div><kbd data-a="toggle">⌥Space</kbd> Show or hide the panel (global)</div>
+  <div><kbd data-a="esc">Esc</kbd> Deselect, then hide the panel</div>
+  <div><kbd data-a="tab">Tab</kbd> Next task in priority order</div>
+  <div><kbd data-a="stab">⇧Tab</kbd> Previous task</div>
+  <div><kbd data-a="open">⌘O / ↵</kbd> Open the selected task in Jira</div>
+  <div><kbd data-a="refetch">⌘R</kbd> Refetch now (3 tasks will change)</div>
+  <div><kbd data-a="focus">focus</kbd> Simulate returning from Jira (refetch on focus)</div>
+  <div><kbd data-a="find">⌘F</kbd> Search: matches stay lit, others dim</div>
+  <div><kbd>F</kbd> Toggle free rotation</div>
+  <div><kbd data-a="qs">Q</kbd> Quick settings popover</div>
+  <div><kbd>drag</kbd> Rotate · <kbd>scroll</kbd> zoom · <kbd>dbl-click</kbd> reset</div>
+</div>
+
+<script>
+(function(){
+  const raw = [
+    ["PAY-412","Refund webhook returns 500 for partial refunds",.92,.20,.95,"In Progress","Highest","2d"],["PAY-398","Collect PCI-DSS audit evidence for Q4",.85,.70,.88,"To Do","High","4d"],
+    ["WEB-221","Update checkout copy for new pricing",.40,.10,.60,"To Do","Medium","5d"],["WEB-230","Dark mode for customer dashboard",.35,.65,.15,"Backlog","Low","—"],
+    ["OPS-77","Rotate prod TLS certs before expiry",.75,.15,.80,"To Do","High","3d"],["OPS-81","Migrate logging stack to Loki",.70,.90,.30,"Backlog","Medium","—"],
+    ["DATA-12","Weekly KPI query for leadership",.55,.25,.45,"To Do","Medium","1w"],["DATA-19","Rebuild data warehouse on ClickHouse",.80,.95,.20,"Backlog","High","—"],
+    ["WEB-240","Fix flaky checkout e2e test",.30,.30,.50,"In Progress","Medium","6d"],["PAY-420","Write retry policy doc",.25,.20,.10,"Backlog","Low","—"],
+    ["CORE-9","Upgrade services to Go 1.24",.50,.55,.35,"To Do","Medium","2w"],["CORE-14","Remove dead feature flags",.20,.40,.05,"Backlog","Lowest","—"],
+    ["MOB-33","Push notifications not delivered on iOS 18",.65,.35,.70,"In Progress","High","3d"],["MOB-40","Tablet layout for order screen",.45,.80,.25,"Backlog","Medium","—"],
+    ["SEC-5","Rotate leaked Stripe API key",.95,.10,1.0,"In Progress","Highest","today"],["HR-2","Onboarding checklist for new hire",.30,.15,.40,"To Do","Low","1w"],
+    ["OPS-90","Q4 cloud cost report",.60,.45,.55,"To Do","Medium","5d"],["WEB-251","Landing page A/B test",.68,.50,.20,"Backlog","Medium","—"]
+  ];
+  const T = raw.map(r=>({k:r[0],t:r[1],v:r[2],e:r[3],u:r[4],st:r[5],pr:r[6],due:r[7]}));
+  function rescore(){ T.forEach(d=>{ d.s=d.v*(0.5+d.u)/(0.3+d.e); d.fire=d.v>=.7&&d.u>=.8; d.rank=0; });
+    const order=[...T].sort((a,b)=>b.s-a.s); order.slice(0,3).forEach((d,i)=>d.rank=i+1); return order; }
+  let order=rescore();
+
+  const pn=$('pn'), cv=$('cv'), tip=pn.querySelector('.tip'), card=$('card'), q=$('q');
+  function $(id){ return document.getElementById(id); }
+  let g,w,h;
+  function setup(){ const dpr=window.devicePixelRatio||1; w=cv.clientWidth; h=cv.clientHeight; cv.width=w*dpr; cv.height=h*dpr; g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); }
+
+  const lo=55, ch=x=>Math.round(lo+(255-lo)*x);
+  function col(u,a){ const s=[[91,123,181],[224,160,48],[229,72,77]], t=u<.5?u/.5:(u-.5)/.5, A=u<.5?s[0]:s[1], B=u<.5?s[1]:s[2];
+    const c=A.map((x,i)=>Math.round(x+(B[i]-x)*t)); return `rgba(${c[0]},${c[1]},${c[2]},${a==null?1:a})`; }
+  const C=(d,a)=>S.colorMode==='u'?col(d.u,a):`rgba(${ch(d.u)},${ch(1-d.e)},${ch(d.v)},${a==null?1:a})`;
+  const bright=d=>(d.u+(1-d.e)+d.v)/3;
+
+  let Y0=-179.7, P0=33.9; const YR=18, PR=10, D=1.5, H=.55; let yaw=Y0, pitch=P0, free=false, zoom=1, fit={cx:0,cy:0,sc:1}, proj=[];
+  function P(x,y,z){ const px=x-.5, py=z*H-.2, pz=y-.5, a=yaw*Math.PI/180, b=pitch*Math.PI/180;
+    const X=px*Math.cos(a)-pz*Math.sin(a), Z1=px*Math.sin(a)+pz*Math.cos(a);
+    const Y=py*Math.cos(b)+Z1*Math.sin(b), Z=-py*Math.sin(b)+Z1*Math.cos(b), s=D/(D+Z);
+    return {x:fit.cx+X*s*fit.sc, y:fit.cy-Y*s*fit.sc, z:Z, s, rx:X*s, ry:-Y*s}; }
+  function computeFit(){ fit={cx:0,cy:0,sc:1}; let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+    for(const c of [[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,1,1],...T.map(d=>[d.v,d.e,d.u])]){ const p=P(...c);
+      x0=Math.min(x0,p.rx); x1=Math.max(x1,p.rx); y0=Math.min(y0,p.ry); y1=Math.max(y1,p.ry); }
+    const pad=24, sc=Math.min((w-2*pad)/(x1-x0),(h-2*pad)/(y1-y0))*zoom; return {sc, cx:w/2-(x0+x1)/2*sc, cy:h/2-(y0+y1)/2*sc}; }
+  function tween(ms,fn,done){ const t0=performance.now(); (function st(now){ const k=Math.min(1,(now-t0)/ms), e=1-Math.pow(1-k,3); fn(e); draw(); if(k<1) requestAnimationFrame(st); else done&&done(); })(t0); }
+  function refit(){ const a={...fit}, b=computeFit(); fit=a; tween(220,e=>fit={sc:a.sc+(b.sc-a.sc)*e,cx:a.cx+(b.cx-a.cx)*e,cy:a.cy+(b.cy-a.cy)*e}); }
+
+  function line(a,b,c,lw,dash){ g.strokeStyle=c; g.lineWidth=lw||1; g.setLineDash(dash||[]); g.lineCap=dash&&dash[0]<2?'round':'butt'; g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.setLineDash([]); g.lineCap='butt'; }
+  function poly(ps,f){ g.fillStyle=f; g.beginPath(); ps.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)); g.closePath(); g.fill(); }
+  function txt(p,s,c,al){ p={x:Math.max(45,Math.min(w-45,p.x)),y:p.y}; g.fillStyle=c; g.font='11px -apple-system,sans-serif'; g.textAlign=al||'center'; g.textBaseline='middle'; g.fillText(s,p.x,p.y); }
+
+  let sel=null, query='', pulse=new Map();
+  const S={labelMode:'smart', stemStyle:'dotted', stemAlpha:30, colorMode:'rgb', showGrid:'1', showZones:'1', panelAlpha:100, onTop:'1', refresh:'5'};
+  const match=d=>!query || (d.k+' '+d.t).toLowerCase().includes(query);
+
+  function draw(){
+    g.clearRect(0,0,w,h);
+    [[.5,1,0,.5,'rgba(70,180,120,.16)','Quick wins'],[.5,1,.5,1,'rgba(90,130,220,.12)','Major projects'],
+     [0,.5,0,.5,'rgba(160,160,160,.04)','Fill-ins'],[0,.5,.5,1,'rgba(200,90,90,.05)','Thankless']].forEach(q=>{
+      poly([P(q[0],q[2],0),P(q[1],q[2],0),P(q[1],q[3],0),P(q[0],q[3],0)],q[4]);
+      if(S.showZones==='1') txt(P((q[0]+q[1])/2,(q[2]+q[3])/2,0),q[5],q[0]>=.5?'rgba(232,236,244,.5)':'rgba(232,236,244,.2)'); });
+    for(let i=0;i<=10&&S.showGrid==='1';i++){ const c=i===5?'rgba(255,255,255,.28)':'rgba(255,255,255,.10)'; line(P(i/10,0,0),P(i/10,1,0),c); line(P(0,i/10,0),P(1,i/10,0),c); }
+    const O=P(0,1,0);
+    line(O,P(1,1,0),'rgba(90,140,255,.85)',2); line(O,P(0,0,0),'rgba(80,220,120,.85)',2); line(O,P(0,1,1),'rgba(255,80,80,.85)',2);
+    txt(P(1.12,1,0),'Value','#7aa2ff'); txt(P(0,-.14,0),'← Less effort','#6ee08f'); txt(P(0,1,1.1),'↑ Urgency','#ff7070');
+
+    proj=T.map(d=>({d,p:P(d.v,d.e,d.u),f:P(d.v,d.e,0)})).sort((a,b)=>b.p.z-a.p.z);
+    const zs=proj.map(o=>o.p.z), zmin=Math.min(...zs), zmax=Math.max(...zs);
+    proj.forEach(o=>{ o.fade=(1-.55*(o.p.z-zmin)/((zmax-zmin)||1))*(match(o.d)?1:.12); o.r=6*o.p.s; });
+    proj.forEach(o=>{ g.globalAlpha=o.fade; g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(o.f.x,o.f.y,4*o.f.s,1.8*o.f.s,0,0,7); g.fill();
+      if(S.stemStyle!=='off') line(o.f,o.p,C(o.d,S.stemAlpha/100),S.stemStyle==='dotted'?1.6:1.2,{solid:null,dotted:[0.5,3.5],dashed:[4,3]}[S.stemStyle]); g.globalAlpha=1; });
+    const now=performance.now();
+    proj.forEach(o=>{ const d=o.d, r=o.r; g.globalAlpha=o.fade;
+      if(d.fire){ g.shadowColor='#ff3b3b'; g.shadowBlur=18; }
+      g.fillStyle=C(d); g.beginPath(); g.arc(o.p.x,o.p.y,r,0,7); g.fill(); g.shadowBlur=0;
+      g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1; g.stroke();
+      const pt=pulse.get(d.k); if(pt){ const k=(now-pt)/1600; if(k<1){ g.strokeStyle=`rgba(244,197,66,${1-k})`; g.lineWidth=2; g.beginPath(); g.arc(o.p.x,o.p.y,r+4+k*14,0,7); g.stroke(); } }
+      if(sel===d){ g.strokeStyle='#3b82f6'; g.lineWidth=2.5; g.beginPath(); g.arc(o.p.x,o.p.y,r+4,0,7); g.stroke(); }
+      g.globalAlpha=1; });
+    // smart summary labels
+    g.font='11px -apple-system,sans-serif';
+    const ov=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h, dots=proj.map(o=>({x:o.p.x-o.r,y:o.p.y-o.r,w:2*o.r,h:2*o.r,o})), placed=[];
+    [...proj].filter(o=>match(o.d)&&(S.labelMode!=='off'||o.d===sel)).sort((a,b)=>(b.d===sel)-(a.d===sel)||(b.d.rank?10-b.d.rank:0)-(a.d.rank?10-a.d.rank:0)||bright(b.d)-bright(a.d)).forEach(o=>{
+      const d=o.d, t=S.labelMode==='key'?d.k:(d.t.length>28?d.t.slice(0,27)+'…':d.t), bw=d.rank?16:0, tw=g.measureText(t).width+bw+8, th=16, x=o.p.x, y=o.p.y, r=o.r;
+      let spot=null;
+      for(const c of [{x:x+r+4,y:y-th/2},{x:x-r-4-tw,y:y-th/2},{x:x-tw/2,y:y-r-th-2},{x:x-tw/2,y:y+r+2}]){ const R={x:c.x,y:c.y,w:tw,h:th};
+        if(R.x<2||R.y<2||R.x+R.w>w-2||R.y+R.h>h-2) continue;
+        if(S.labelMode!=='all'&&(placed.some(p=>ov(p,R))||dots.some(q=>q.o!==o&&ov(q,R)))) continue; spot=R; break; }
+      if(!spot&&S.labelMode==='all') spot={x:x+r+4,y:y-th/2,w:tw,h:th};
+      if(!spot) return; placed.push(spot);
+      g.globalAlpha=o.fade; g.fillStyle='rgba(15,20,32,.6)'; g.fillRect(spot.x,spot.y,spot.w,spot.h);
+      let tx=spot.x+4;
+      if(d.rank){ g.fillStyle='#f4c542'; g.beginPath(); g.arc(tx+6,spot.y+8,6,0,7); g.fill(); g.fillStyle='#0f1420'; g.font='bold 9px -apple-system,sans-serif';
+        g.textAlign='center'; g.textBaseline='middle'; g.fillText(d.rank,tx+6,spot.y+8.5); tx+=bw; g.font='11px -apple-system,sans-serif'; }
+      g.fillStyle=sel===d?'#8fb8ff':d.fire?'#ff9a9a':`rgba(232,236,244,${.35+.65*bright(d)})`; g.textAlign='left'; g.textBaseline='middle'; g.fillText(t,tx,spot.y+8.5);
+      g.globalAlpha=1; });
+    placeCard(); const nrm=a=>((a+180)%360+360)%360-180; $('angTxt').textContent=`${nrm(yaw).toFixed(1)}° / ${pitch.toFixed(1)}° · ${zoom.toFixed(2)}×`;
+    if([...pulse.values()].some(t=>now-t<1600)) requestAnimationFrame(draw);
+  }
+
+  function renderNext(){ $('next').innerHTML='<b>Next:</b> '+order.slice(0,3).map(d=>`<span data-k="${d.k}">${d.rank}. ${d.t}</span>`).join(' &nbsp;·&nbsp; ');
+    $('next').querySelectorAll('span').forEach(s=>s.onclick=()=>select(T.find(d=>d.k===s.dataset.k))); }
+  function select(d){ sel=d; card.style.display=d?'block':'none';
+    if(d) card.innerHTML=`<div class="k">${d.k} · ${d.st}</div><b>${d.t}</b>
+      <div class="row" style="margin-top:4px"><span>Value <b>${(d.v*5).toFixed(1)}</b></span><span>Ease <b>${((1-d.e)*5).toFixed(1)}</b></span><span>Urgency <b>${(d.u*5).toFixed(1)}</b></span></div>
+      <div class="row"><span>Priority <b>${d.pr}</b></span><span>Due <b>${d.due}</b></span>${d.rank?`<span style="color:#f4c542">#${d.rank} next</span>`:''}</div>
+      <span class="open" id="openBtn">⌘O Open in Jira ↗</span>`;
+    if(d) $('openBtn').onclick=openJira; draw(); }
+  function placeCard(){ if(!sel) return; const o=proj.find(o=>o.d===sel); if(!o) return;
+    let x=o.p.x+16, y=o.p.y-20; if(x+240>w) x=o.p.x-250; y=Math.max(6,Math.min(h-card.offsetHeight-6,y));
+    card.style.left=x+'px'; card.style.top=y+'px'; }
+  function toast(s){ const t=$('toast'); t.textContent=s; t.style.opacity=1; clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity=0,2200); }
+  function openJira(){ if(!sel) return toast('Select a task first (click a dot or press Tab)'); toast(`Would open https://your-site.atlassian.net/browse/${sel.k} in your browser`); }
+
+  let lastSync=Date.now();
+  setInterval(()=>{ const s=Math.round((Date.now()-lastSync)/1000); $('sync').textContent=s<5?'synced just now':s<60?`synced ${s}s ago`:`synced ${Math.round(s/60)}m ago`; },1000);
+  function refetch(why){
+    // simulate: 3 random tasks change their Jira fields; dots glide to the new spot and pulse
+    const picks=[...T].sort(()=>Math.random()-.5).slice(0,3);
+    const from=picks.map(d=>({v:d.v,e:d.e,u:d.u})), to=picks.map(d=>({v:Math.random()*.9+.05,e:Math.random()*.9+.05,u:Math.random()*.95+.05}));
+    tween(700,e=>picks.forEach((d,i)=>{ d.v=from[i].v+(to[i].v-from[i].v)*e; d.e=from[i].e+(to[i].e-from[i].e)*e; d.u=from[i].u+(to[i].u-from[i].u)*e; }),
+      ()=>{ order=rescore(); renderNext(); if(sel) select(sel); });
+    const t=performance.now(); picks.forEach(d=>pulse.set(d.k,t));
+    lastSync=Date.now(); toast(`${why}: 3 tasks changed (${picks.map(d=>d.k).join(', ')})`); }
+
+  function step(dir){ const i=sel?order.indexOf(sel):-1; select(order[(i+dir+order.length)%order.length]); }
+  function toggle(){ pn.classList.toggle('hidden'); $('hint').style.opacity=pn.classList.contains('hidden')?1:0; if(!pn.classList.contains('hidden')) pn.focus(); }
+  function esc(){ if(q.style.display==='inline-block'){ q.value=''; query=''; q.style.display='none'; pn.focus(); draw(); return; }
+    if(sel) return select(null); toggle(); }
+  function find(){ q.style.display='inline-block'; q.focus(); }
+  q.oninput=()=>{ query=q.value.toLowerCase().trim(); draw(); };
+  q.onkeydown=e=>{ if(e.key==='Escape'){ e.preventDefault(); esc(); } if(e.key==='Enter'){ const m=order.find(match); if(m) select(m); pn.focus(); } };
+
+
+  // quick settings wiring
+  const qs=$('qs');
+  function qsToggle(){ qs.style.display=qs.style.display==='block'?'none':'block'; syncQS(); }
+  $('bQ').onclick=qsToggle; $('qsX').onclick=qsToggle;
+  function syncQS(){
+    qs.querySelectorAll('.seg').forEach(sg=>{ const k=sg.dataset.k, v=k==='free'?(free?'1':'0'):String(S[k]); sg.querySelectorAll('b').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); });
+    qs.querySelectorAll('input[type=range]').forEach(i=>{ i.value=i.dataset.k==='zoom'?Math.round(zoom*100):S[i.dataset.k]; });
+    pn.style.background=`rgba(15,20,32,${S.panelAlpha/100})`; }
+  qs.querySelectorAll('.seg b').forEach(b=>b.onclick=()=>{ const k=b.parentNode.dataset.k, v=b.dataset.v;
+    if(k==='free'){ free=v==='1'; if(!free){ yaw=Math.max(Y0-YR,Math.min(Y0+YR,yaw)); pitch=Math.max(P0-PR,Math.min(P0+PR,pitch)); } refit(); }
+    else S[k]=v;
+    if(k==='onTop') toast(v==='1'?'Panel stays above other windows':'Panel behaves like a normal window');
+    if(k==='refresh') toast(v==='0'?'Auto refresh off':`Auto refresh every ${v} min`);
+    syncQS(); draw(); });
+  qs.querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{ const k=i.dataset.k;
+    if(k==='zoom'){ zoom=i.value/100; fit=computeFit(); } else S[k]=+i.value; syncQS(); draw(); });
+  $('qsPin').onclick=()=>{ Y0=yaw; P0=Math.max(-80,Math.min(80,pitch)); toast('Current angle and zoom saved as default'); };
+  $('qsRst').onclick=()=>{ Y0=-179.7; P0=33.9; yaw=Y0; pitch=P0; zoom=1; refit(); syncQS(); };
+  const A={qs:qsToggle, toggle, esc, tab:()=>step(1), stab:()=>step(-1), open:openJira, refetch:()=>refetch('Refetched'), focus:()=>refetch('Back from Jira, refetched on focus'), find};
+  document.querySelectorAll('.keys kbd[data-a]').forEach(k=>k.onclick=()=>{ if(pn.classList.contains('hidden')&&k.dataset.a!=='toggle') toggle(); A[k.dataset.a](); });
+  $('bR').onclick=()=>A.refetch();
+  window.addEventListener('keydown',e=>{
+    if(e.altKey && e.code==='Space'){ e.preventDefault(); return toggle(); }
+    if(document.activeElement===q) return;
+    if(pn.classList.contains('hidden')) return;
+    const m=e.metaKey||e.ctrlKey;
+    if(e.key==='Tab'){ e.preventDefault(); return step(e.shiftKey?-1:1); }
+    if(e.key==='Escape'){ e.preventDefault(); return esc(); }
+    if(m&&e.key.toLowerCase()==='o' || e.key==='Enter'){ e.preventDefault(); return openJira(); }
+    if(m&&e.key.toLowerCase()==='r'){ e.preventDefault(); return A.refetch(); }
+    if(m&&e.key.toLowerCase()==='f'){ e.preventDefault(); return find(); }
+    if(!m&&(e.key==='q'||e.key==='Q')) return qsToggle();
+    if(!m&&(e.key==='f'||e.key==='F')){ free=!free; if(!free){ yaw=Math.max(Y0-YR,Math.min(Y0+YR,yaw)); pitch=Math.max(P0-PR,Math.min(P0+PR,pitch)); } toast(free?'Free rotation':'Limited rotation'); refit(); syncQS(); }
+  });
+
+  let drag=null, moved=false;
+  cv.addEventListener('mousedown',e=>{ drag={x:e.clientX,y:e.clientY,yaw,pitch}; moved=false; pn.focus(); });
+  window.addEventListener('mouseup',e=>{ if(!drag) return; const wasDrag=moved; drag=null;
+    if(wasDrag) return refit();
+    const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    let best=null,bd=14; proj.forEach(o=>{ const dd=Math.hypot(o.p.x-mx,o.p.y-my); if(dd<bd&&match(o.d)){bd=dd;best=o;} });
+    if(e.target===cv) select(best?best.d:null); });
+  window.addEventListener('mousemove',e=>{ if(!drag) return; if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>3) moved=true; if(!moved) return;
+    yaw=drag.yaw+(e.clientX-drag.x)*.3; pitch=drag.pitch+(e.clientY-drag.y)*.3;
+    if(free) pitch=Math.max(-89,Math.min(89,pitch)); else { yaw=Math.max(Y0-YR,Math.min(Y0+YR,yaw)); pitch=Math.max(P0-PR,Math.min(P0+PR,pitch)); }
+    draw(); });
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); zoom=Math.max(.5,Math.min(3,zoom*Math.exp(-e.deltaY*.0015))); fit=computeFit(); draw(); syncQS(); },{passive:false});
+  cv.addEventListener('dblclick',()=>{ yaw=Y0; pitch=P0; zoom=1; refit(); });
+  cv.addEventListener('mousemove',ev=>{ if(drag) return tip.style.display='none';
+    const r=cv.getBoundingClientRect(), mx=ev.clientX-r.left, my=ev.clientY-r.top;
+    let best=null,bd=14; proj.forEach(o=>{ const dd=Math.hypot(o.p.x-mx,o.p.y-my); if(dd<bd&&match(o.d)){bd=dd;best=o;} });
+    if(best&&best.d!==sel){ tip.style.display='block'; tip.style.left=(best.p.x+12)+'px'; tip.style.top=(best.p.y+10)+'px'; tip.textContent=`${best.d.k} · ${best.d.t}`; cv.style.cursor='pointer'; }
+    else { tip.style.display='none'; cv.style.cursor='grab'; } });
+  cv.addEventListener('mouseleave',()=>tip.style.display='none');
+  window.addEventListener('resize',()=>{ setup(); fit=computeFit(); draw(); });
+  setup(); fit=computeFit(); renderNext(); syncQS(); qs.style.display='block'; draw(); pn.focus();
+})();
+</script>

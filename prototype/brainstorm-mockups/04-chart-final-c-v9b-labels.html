@@ -1,0 +1,203 @@
+<h2>Labels v1 (summary next to dot), on C v9b: tighter fit + zoom, default yaw -179.7° pitch 33.9°</h2>
+<p class="subtitle">The origin corner (low value, high effort, low urgency = "not worth it") sits at the far back. The corner nearest your eye is high value + low effort, and urgency lifts tasks toward you. Drag to rotate (clamped), double-click to reset, hover for details.</p>
+
+<style>
+  .vp { background:#0f1420; border-radius:8px; position:relative; max-width:820px; }
+  .vp canvas { display:block; width:100%; height:520px; cursor:grab; }
+  .vp canvas:active { cursor:grabbing; }
+  .vp .tip { position:absolute; pointer-events:none; background:#1e2636; color:#e8ecf4; font:12px/1.3 -apple-system,sans-serif; padding:4px 7px; border-radius:4px; display:none; white-space:nowrap; }
+  .next { font:12px -apple-system,sans-serif; color:#9aa6bd; padding:6px 10px 8px; background:#0f1420; border-top:1px solid #1e2636; border-radius:0 0 8px 8px; max-width:820px; }
+  .next b { color:#f4c542; }
+</style>
+
+<div style="margin:0 0 8px;font-size:13px">Dot color:
+  <button class="mock-button" id="mRGB" style="padding:4px 10px">RGB mix</button>
+  <button class="mock-button" id="mU" style="padding:4px 10px;opacity:.55">Urgency only (v3)</button>
+  &nbsp;&nbsp;Labels:
+  <button class="mock-button lm" data-m="smart" style="padding:4px 10px">Summary (smart)</button>
+  <button class="mock-button lm" data-m="all" style="padding:4px 10px;opacity:.55">Summary (all)</button>
+  <button class="mock-button lm" data-m="key" style="padding:4px 10px;opacity:.55">Key only</button>
+  &nbsp;&nbsp;Rotation:
+  <button class="mock-button" id="rL" style="padding:4px 10px">Limited</button>
+  <button class="mock-button" id="rF" style="padding:4px 10px;opacity:.55">Free (F)</button></div>
+<div class="vp"><canvas id="cC"></canvas><div class="tip"></div>
+  <div id="hud" style="font:11px ui-monospace,Menlo,monospace;color:#9aa6bd;background:#0f1420;border-top:1px solid #1e2636;padding:6px 10px">
+    <span id="hudTxt"></span><span id="hudHidden" style="color:#f4c542"></span>
+    <button id="pin" class="mock-button" style="padding:2px 8px;margin-left:8px;font-size:11px">Set as default</button>
+    <button id="rst" class="mock-button" style="padding:2px 8px;font-size:11px;opacity:.7">Factory reset</button>
+  </div></div><div class="next" id="nC"></div>
+
+<div class="section" style="margin-top:1rem">
+  <h3>How to read the colors</h3>
+  <p style="font-size:13px">R = urgency, G = ease (1 − effort), B = value. Each channel runs from 55 to 255. <b>Brightness ≈ priority; hue = why.</b></p>
+  <ul style="font-size:13px;list-style:none;padding-left:0">
+    <li><span style="color:#fff">●</span> <b>White #FFF</b>: urgent, valuable, easy. Do now.</li>
+    <li><span style="color:rgb(255,55,255)">●</span> <b>Magenta</b>: urgent, valuable, hard. Big and pressing.</li>
+    <li><span style="color:rgb(55,255,255)">●</span> <b>Cyan</b>: valuable, easy, not urgent. A quick win you can schedule.</li>
+    <li><span style="color:rgb(255,255,55)">●</span> <b>Yellow</b>: urgent, easy, low value. Someone else's fire, so delegate it.</li>
+    <li><span style="color:rgb(55,55,255)">●</span> <b>Blue</b>: valuable, hard, not urgent. A major project.</li>
+    <li><span style="color:rgb(55,255,55)">●</span> <b>Green</b>: easy, low value, not urgent. A fill-in.</li>
+    <li><span style="color:rgb(55,55,55)">●</span> <b>Dark #373737</b>: hard, low value, not urgent. Thankless, so drop it.</li>
+  </ul>
+  <h3>What changed vs v1</h3>
+  <ul>
+    <li><b>v3d:</b> stems back up to ~45% opacity (solid, 1.2px), between v1 and v2. Labels stacked in the empty top-right, so the floor uses the full width.</li>
+    <li><b>v3:</b> floor ~40% larger and tilted more toward you (pitch 38°), urgency height squeezed to 55% of floor size, 10×10 grid at low opacity with the quadrant split lines brighter.</li>
+    <li><b>Stems:</b> thin, dashed, ~20% opacity; floor shadow is a faint smudge. They hint at position without competing with the dots.</li>
+    <li><b>Camera:</b> looks straight down the diagonal from the "Quick wins" corner toward the origin. Stronger perspective, so near tasks are drawn bigger and far ones shrink and fade.</li>
+    <li><b>Depth fade:</b> far dots are dimmer, so your eye lands on the front first.</li>
+    <li><b>Labels:</b> labels for the top 3 and on-fire tasks are spread apart with thin leader lines so they no longer overlap.</li>
+  </ul>
+</div>
+
+<script>
+(function(){
+  const T = [
+    ["PAY-412","Refund webhook returns 500 for partial refunds",.92,.20,.95],["PAY-398","Collect PCI-DSS audit evidence for Q4",.85,.70,.88],
+    ["WEB-221","Update checkout copy for new pricing",.40,.10,.60],["WEB-230","Dark mode for customer dashboard",.35,.65,.15],
+    ["OPS-77","Rotate prod TLS certs before expiry",.75,.15,.80],["OPS-81","Migrate logging stack to Loki",.70,.90,.30],
+    ["DATA-12","Weekly KPI query for leadership",.55,.25,.45],["DATA-19","Rebuild data warehouse on ClickHouse",.80,.95,.20],
+    ["WEB-240","Fix flaky checkout e2e test",.30,.30,.50],["PAY-420","Write retry policy doc",.25,.20,.10],
+    ["CORE-9","Upgrade services to Go 1.24",.50,.55,.35],["CORE-14","Remove dead feature flags",.20,.40,.05],
+    ["MOB-33","Push notifications not delivered on iOS 18",.65,.35,.70],["MOB-40","Tablet layout for order screen",.45,.80,.25],
+    ["SEC-5","Rotate leaked Stripe API key",.95,.10,1.0],["HR-2","Onboarding checklist for new hire",.30,.15,.40],
+    ["OPS-90","Q4 cloud cost report",.60,.45,.55],["WEB-251","Landing page A/B test",.68,.50,.20]
+  ].map(r=>({k:r[0],t:r[1],v:r[2],e:r[3],u:r[4]}));
+  T.forEach(d=>{ d.s = d.v*(0.5+d.u)/(0.3+d.e); d.fire = d.v>=.7 && d.u>=.8; });
+  const top = [...T].sort((a,b)=>b.s-a.s).slice(0,3); top.forEach((d,i)=>d.rank=i+1);
+  document.getElementById('nC').innerHTML = '<b>Next:</b> ' + top.map(d=>`${d.rank}. ${d.k} ${d.t}`).join(' &nbsp;·&nbsp; ');
+
+  function col(u,a){
+    const s=[[91,123,181],[224,160,48],[229,72,77]];
+    const t=u<.5?u/.5:(u-.5)/.5, A=u<.5?s[0]:s[1], B=u<.5?s[1]:s[2];
+    const c=A.map((x,i)=>Math.round(x+(B[i]-x)*t));
+    return `rgba(${c[0]},${c[1]},${c[2]},${a==null?1:a})`;
+  }
+  let mode='rgb', labelMode='smart';
+  document.querySelectorAll('.lm').forEach(b=>b.onclick=()=>{ labelMode=b.dataset.m;
+    document.querySelectorAll('.lm').forEach(x=>x.style.opacity=x===b?1:.55); draw(); });
+  const lo=55, ch=x=>Math.round(lo+(255-lo)*x); // ponytail: floor of 55 so "nothing" tasks don't vanish on the dark bg
+  function C(d,a){ if(mode!=='rgb') return col(d.u,a); return `rgba(${ch(d.u)},${ch(1-d.e)},${ch(d.v)},${a==null?1:a})`; }
+  document.getElementById('mRGB').onclick=()=>{mode='rgb';mRGB.style.opacity=1;mU.style.opacity=.55;draw();};
+  document.getElementById('mU').onclick=()=>{mode='u';mU.style.opacity=1;mRGB.style.opacity=.55;draw();};
+  const cv=document.getElementById('cC'), tip=cv.parentNode.querySelector('.tip');
+  let g,w,h;
+  function setup(){ const dpr=window.devicePixelRatio||1; w=cv.clientWidth; h=cv.clientHeight;
+    cv.width=w*dpr; cv.height=h*dpr; g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); }
+
+  // world: x=value, y=effort (high effort = back), z=urgency (up). Origin of meaning = (v0, e1, u0) at the back.
+  const FY=-179.7, FP=33.9; let Y0=FY, P0=FP; const YR=18, PR=10, D=1.5, H=.55; /* H = urgency height vs floor */ let yaw=Y0, pitch=P0, proj=[];
+  function P(x,y,z){
+    const px=x-.5, py=z*H-.2, pz=y-.5, a=yaw*Math.PI/180, b=pitch*Math.PI/180;
+    const X=px*Math.cos(a)-pz*Math.sin(a), Z1=px*Math.sin(a)+pz*Math.cos(a);
+    const Y=py*Math.cos(b)+Z1*Math.sin(b), Z=-py*Math.sin(b)+Z1*Math.cos(b);
+    const s=D/(D+Z);
+    return {x:fit.cx+X*s*fit.sc, y:fit.cy-Y*s*fit.sc, z:Z, s, rx:X*s, ry:-Y*s};
+  }
+  // fit the floor + urgency box into the canvas at every yaw/pitch extreme, so no corner is ever clipped
+  let zoomSaved=1;
+  try{ const sv=JSON.parse(localStorage.getItem('otm.defaultAngle')||'null'); if(sv){ Y0=sv.yaw; P0=sv.pitch; yaw=Y0; pitch=P0; zoomSaved=sv.zoom||1; } }catch(e){}
+  const nrm=a=>((a+180)%360+360)%360-180;
+  function hud(){ hudTxt.textContent=`yaw ${nrm(yaw).toFixed(1)}°  pitch ${pitch.toFixed(1)}°  zoom ${zoom.toFixed(2)}×  ${free?'FREE':'LIMITED'}  ·  default ${nrm(Y0).toFixed(1)}° / ${P0.toFixed(1)}°`; }
+  pin.onclick=e=>{ e.stopPropagation(); Y0=yaw; P0=Math.max(-80,Math.min(80,pitch)); try{localStorage.setItem('otm.defaultAngle',JSON.stringify({yaw:nrm(Y0),pitch:P0,zoom}))}catch(_){}
+    pin.textContent='Saved ✓'; setTimeout(()=>pin.textContent='Set as default',1200); doFit(); draw(); };
+  rst.onclick=e=>{ e.stopPropagation(); Y0=FY; P0=FP; yaw=Y0; pitch=P0; zoom=1; try{localStorage.removeItem('otm.defaultAngle')}catch(_){} refit(); };
+  let fit={cx:0,cy:0,sc:1}, free=false;
+  function setFree(f){ free=f; rF.style.opacity=f?1:.55; rL.style.opacity=f?.55:1;
+    if(!f){ yaw=Math.max(Y0-YR,Math.min(Y0+YR,yaw)); pitch=Math.max(P0-PR,Math.min(P0+PR,pitch)); }
+    refit(); }
+  rL.onclick=()=>setFree(false); rF.onclick=()=>setFree(true);
+  window.addEventListener('keydown',e=>{ if(e.key==='f'||e.key==='F') setFree(!free); });
+  // fit to what is actually drawn (floor, urgency axis, tasks) at the CURRENT angle; zoom multiplies on top
+  let zoom=1;
+  function computeFit(){
+    fit={cx:0,cy:0,sc:1}; let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+    const pts=[[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,1,1],...T.map(d=>[d.v,d.e,d.u])];
+    for(const c of pts){ const p=P(...c); x0=Math.min(x0,p.rx); x1=Math.max(x1,p.rx); y0=Math.min(y0,p.ry); y1=Math.max(y1,p.ry); }
+    const pad=28, sc=Math.min((w-2*pad)/(x1-x0),(h-2*pad)/(y1-y0))*zoom;
+    return {sc, cx:w/2-(x0+x1)/2*sc, cy:h/2-(y0+y1)/2*sc};
+  }
+  function doFit(){ fit=computeFit(); }
+  function refit(){ const from={...fit}, to=computeFit(); fit=from; const t0=performance.now();
+    (function step(now){ const k=Math.min(1,(now-t0)/220), e=1-Math.pow(1-k,3);
+      fit={sc:from.sc+(to.sc-from.sc)*e, cx:from.cx+(to.cx-from.cx)*e, cy:from.cy+(to.cy-from.cy)*e}; draw();
+      if(k<1) requestAnimationFrame(step); })(t0); }
+  function line(a,b,c,lw,dash){ g.strokeStyle=c; g.lineWidth=lw||1; g.setLineDash(dash||[]); g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.setLineDash([]); }
+  function poly(ps,fill){ g.fillStyle=fill; g.beginPath(); ps.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)); g.closePath(); g.fill(); }
+  function txt(p,s,c,al){ p={x:Math.max(45,Math.min(w-45,p.x)),y:p.y}; g.fillStyle=c; g.font='11px -apple-system,sans-serif'; g.textAlign=al||'center'; g.textBaseline='middle'; g.fillText(s,p.x,p.y); }
+
+  function draw(){
+    g.clearRect(0,0,w,h); hud();
+    const Q=[[.5,1,0,.5,'rgba(70,180,120,.16)','Quick wins'],[.5,1,.5,1,'rgba(90,130,220,.12)','Major projects'],
+             [0,.5,0,.5,'rgba(160,160,160,.04)','Fill-ins'],[0,.5,.5,1,'rgba(200,90,90,.05)','Thankless']];
+    Q.forEach(q=>{ poly([P(q[0],q[2],0),P(q[1],q[2],0),P(q[1],q[3],0),P(q[0],q[3],0)],q[4]);
+      txt(P((q[0]+q[1])/2,(q[2]+q[3])/2,0),q[5],q[0]>=.5?'rgba(232,236,244,.6)':'rgba(232,236,244,.22)'); });
+    for(let i=0;i<=10;i++){ const c=i===5?'rgba(255,255,255,.28)':'rgba(255,255,255,.10)'; line(P(i/10,0,0),P(i/10,1,0),c); line(P(0,i/10,0),P(1,i/10,0),c); }
+    line(P(0,0,0),P(1,0,0),'rgba(255,255,255,.18)'); line(P(1,0,0),P(1,1,0),'rgba(255,255,255,.18)');
+    // axes from the back origin O = (v0, e-high, u0)
+    const O=P(0,1,0);
+    line(O,P(1,1,0),'rgba(90,140,255,.85)',2); line(O,P(0,0,0),'rgba(80,220,120,.85)',2); line(O,P(0,1,1),'rgba(255,80,80,.85)',2);
+    g.fillStyle='#9aa6bd'; g.beginPath(); g.arc(O.x,O.y,2.5,0,7); g.fill(); txt({x:O.x,y:O.y-10},'0','#9aa6bd');
+    txt(P(1.12,1,0),'Value ↓ (B)','#7aa2ff'); txt(P(0,-.14,0),'← Less effort (G = ease)','#6ee08f'); txt(P(0,1,1.08),'↑ Urgency (R)','#ff7070');
+
+    proj = T.map(d=>({d, p:P(d.v,d.e,d.u), f:P(d.v,d.e,0)})).sort((a,b)=>b.p.z-a.p.z);
+    const zs=proj.map(o=>o.p.z), zmin=Math.min(...zs), zmax=Math.max(...zs);
+    proj.forEach(o=>{ o.fade = 1-.55*(o.p.z-zmin)/((zmax-zmin)||1); });
+    // faint stems + shadows
+    proj.forEach(o=>{ g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(o.f.x,o.f.y,4*o.f.s,1.8*o.f.s,0,0,7); g.fill();
+      line(o.f,o.p,C(o.d,.45*o.fade),1.2); });
+    // dots, far to near
+    proj.forEach(o=>{ const r=6*o.p.s, d=o.d;
+      g.globalAlpha=o.fade;
+      if(d.fire){ g.shadowColor='#ff3b3b'; g.shadowBlur=18; }
+      g.fillStyle=C(d); g.beginPath(); g.arc(o.p.x,o.p.y,r,0,7); g.fill(); g.shadowBlur=0;
+      g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1; g.stroke(); g.globalAlpha=1; o.r=r; });
+    // labels: summary next to each dot, placed in brightness order, hidden if no free spot (mode 'all' = no culling)
+    g.font='11px -apple-system,sans-serif';
+    const ov=(a,b)=>a.x<b.x+b.w && b.x<a.x+a.w && a.y<b.y+b.h && b.y<a.y+a.h;
+    const dots=proj.map(o=>({x:o.p.x-o.r,y:o.p.y-o.r,w:2*o.r,h:2*o.r,o}));
+    const placed=[]; let hidden=0;
+    const bright=d=>(d.u+(1-d.e)+d.v)/3;
+    [...proj].sort((a,b)=>(b.d.rank?10-b.d.rank:0)-(a.d.rank?10-a.d.rank:0) || bright(b.d)-bright(a.d)).forEach(o=>{
+      const d=o.d, t=labelMode==='key'?d.k:(d.t.length>28?d.t.slice(0,27)+'…':d.t);
+      const bw=(d.rank?16:0), tw=g.measureText(t).width+bw+8, th=16, x=o.p.x, y=o.p.y, r=o.r;
+      const cands=[{x:x+r+4,y:y-th/2},{x:x-r-4-tw,y:y-th/2},{x:x-tw/2,y:y-r-th-2},{x:x-tw/2,y:y+r+2}];
+      let spot=null;
+      for(const c of cands){ const R={x:c.x,y:c.y,w:tw,h:th};
+        if(R.x<2||R.y<2||R.x+R.w>w-2||R.y+R.h>h-2) continue;
+        if(labelMode!=='all' && (placed.some(p=>ov(p,R)) || dots.some(q=>q.o!==o && ov(q,R)))) continue;
+        spot=R; break; }
+      if(!spot && labelMode==='all') spot={x:cands[0].x,y:cands[0].y,w:tw,h:th};
+      if(!spot){ hidden++; return; }
+      placed.push(spot);
+      const a=.35+.65*bright(d);
+      g.globalAlpha=o.fade; g.fillStyle='rgba(15,20,32,.6)'; g.fillRect(spot.x,spot.y,spot.w,spot.h);
+      let tx=spot.x+4;
+      if(d.rank){ g.fillStyle='#f4c542'; g.beginPath(); g.arc(tx+6,spot.y+8,6,0,7); g.fill();
+        g.fillStyle='#0f1420'; g.font='bold 9px -apple-system,sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(d.rank,tx+6,spot.y+8.5); tx+=bw; g.font='11px -apple-system,sans-serif'; }
+      g.fillStyle=d.fire?'#ff9a9a':`rgba(232,236,244,${a})`; g.textAlign='left'; g.textBaseline='middle'; g.fillText(t,tx,spot.y+8.5);
+      g.globalAlpha=1; });
+    hudHidden.textContent = hidden?`  ·  ${hidden} labels hidden (hover / zoom to see)`:'';
+  }
+  let drag=null;
+  cv.addEventListener('mousedown',e=>drag={x:e.clientX,y:e.clientY,yaw,pitch});
+  window.addEventListener('mouseup',()=>{ if(drag){ drag=null; refit(); } });
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); zoom=Math.max(.5,Math.min(3,zoom*Math.exp(-e.deltaY*.0015))); doFit(); draw(); },{passive:false});
+  window.addEventListener('mousemove',e=>{ if(!drag) return;
+    yaw=drag.yaw+(e.clientX-drag.x)*.3; pitch=drag.pitch+(e.clientY-drag.y)*.3;
+    if(free){ pitch=Math.max(-89,Math.min(89,pitch)); }
+    else { yaw=Math.max(Y0-YR,Math.min(Y0+YR,yaw)); pitch=Math.max(P0-PR,Math.min(P0+PR,pitch)); }
+    draw(); });
+  cv.addEventListener('dblclick',()=>{yaw=Y0;pitch=P0;refit();});
+  cv.addEventListener('mousemove',ev=>{
+    const r=cv.getBoundingClientRect(), mx=ev.clientX-r.left, my=ev.clientY-r.top;
+    let best=null,bd=14; proj.forEach(o=>{const dd=Math.hypot(o.p.x-mx,o.p.y-my); if(dd<bd){bd=dd;best=o;}});
+    if(best){ tip.style.display='block'; tip.style.left=(best.p.x+12)+'px'; tip.style.top=(best.p.y+10)+'px';
+      tip.textContent=`${best.d.k} · ${best.d.t} · V${(best.d.v*5).toFixed(0)} E${(best.d.e*5).toFixed(0)} U${(best.d.u*5).toFixed(0)}`; }
+    else tip.style.display='none';
+  });
+  cv.addEventListener('mouseleave',()=>tip.style.display='none');
+  window.addEventListener('resize',()=>{setup();doFit();draw();});
+  zoom=zoomSaved; setup(); doFit(); draw();
+})();
+</script>
