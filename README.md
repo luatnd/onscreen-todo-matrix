@@ -12,6 +12,17 @@ An open-source macOS floating panel that shows your Jira Cloud issues as a 3D pr
 - [x] Tech stack decision (Swift + WKWebView chart)
 - [x] Design spec v1.0.0
 - [ ] Review written spec
-- [ ] Implementation plan (writing-plans)
-- [ ] Implement v1 (TDD + code review per phase)
+- [x] Implementation plan (writing-plans)
+- [x] Implement v1 (TDD + code review per phase)
 - [ ] Later: combine multiple fields per axis; editable scoring; signed + notarized release; Homebrew cask
+
+# Build & run
+Requirements: macOS 14+, Xcode 26 (Swift 6.2 toolchain), Node 22.
+
+~~~bash
+cd productivity/onscreen-todo-matrix/src
+./scripts/build-app.sh
+open "build/Onscreen Todo Matrix.app"
+~~~
+
+Development: `swift test` (core logic), `cd chart && npm test` (chart), `swift run OnscreenTodoMatrix` (runs with `chart/dist` from the source tree; run `npm run build` in `chart/` first). Manual window checks: [src/docs/manual-checklist.md](src/docs/manual-checklist.md).
