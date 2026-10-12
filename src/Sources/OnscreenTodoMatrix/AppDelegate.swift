@@ -1,0 +1,97 @@
+import AppKit
+import Combine
+import KeyboardShortcuts
+import OTMCore
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var model: AppModel!
+    private var panel: PanelController!
+    private var settings: SettingsWindowController!
+    private var statusItem: NSStatusItem!
+    private var timer: Timer?
+    private var bag = Set<AnyCancellable>()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let dir = ConfigStore.defaultDirectory()
+        model = AppModel(
+            configStore: ConfigStore(directory: dir), cache: IssueCache(directory: dir),
+            tokenStore: KeychainTokenStore(), scheduler: RefreshScheduler(),
+            makeClient: { site, email, token in JiraClient(site: site, email: email, token: token) }
+        )
+        panel = PanelController(model: model)
+        settings = SettingsWindowController(model: model) { [weak self] in
+            self?.panel.show()
+            Task { await self?.model.refresh(.manual) }
+        }
+        panel.chart.onMessage = { [weak self] msg in self?.handle(msg) }
+        setUpStatusItem()
+        KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in self?.panel.toggle() }
+        timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            Task { @MainActor in await self?.model.refresh(.timer) }
+        }
+        model.$renderState
+            .map { $0.status.banner != nil }
+            .removeDuplicates()
+            .sink { [weak self] warn in self?.updateIcon(warning: warn) }
+            .store(in: &bag)
+
+        if model.isConfigured {
+            panel.show()
+            Task { await model.refresh(.manual) }
+        } else {
+            settings.show()
+        }
+    }
+
+    // MARK: - Status item
+
+    private func setUpStatusItem() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        updateIcon(warning: false)
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Show / Hide Panel", action: #selector(togglePanel), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Quit onscreen-todo-matrix", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        statusItem.menu = menu
+    }
+
+    private func updateIcon(warning: Bool) {
+        let name = warning ? "exclamationmark.triangle" : "circle.hexagongrid"
+        statusItem?.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: "onscreen-todo-matrix")
+    }
+
+    @objc private func togglePanel() { panel.toggle() }
+    @objc private func refreshNow() { Task { await model.refresh(.manual) } }
+    @objc private func openSettings() { settings.show() }
+
+    // MARK: - Messages from the chart
+
+    private func handle(_ msg: [String: Any]) {
+        switch msg["type"] as? String {
+        case "openIssue":
+            if let key = msg["key"] as? String, let url = model.issueURL(key: key) { NSWorkspace.shared.open(url) }
+        case "refetch":
+            Task { await model.refresh(.manual) }
+        case "hide":
+            panel.hide()
+        case "openSettings":
+            settings.show()
+        case "selectPreset":
+            if let id = msg["id"] as? String {
+                model.selectPreset(id: id)
+                Task { await model.refresh(.manual) }
+            }
+        case "quickSetting":
+            if let key = msg["key"] as? String { model.setQuickSetting(key: key, value: JSONValue(any: msg["value"])) }
+        case "saveDefaultView":
+            if let yaw = msg["yaw"] as? Double, let pitch = msg["pitch"] as? Double, let zoom = msg["zoom"] as? Double {
+                model.saveDefaultView(yaw: yaw, pitch: pitch, zoom: zoom)
+            }
+        default:
+            break
+        }
+    }
+}
