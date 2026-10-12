@@ -34,3 +34,4 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1420; col
 .mono { font: 10px ui-monospace, Menlo, monospace; }
 #next { flex: none; padding: 6px 10px; border-top: 1px solid #1e2636; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #next b { color: #f4c542; } #next span { cursor: pointer; } #next span:hover { color: #e8ecf4; }
+#q { -webkit-user-select: text; user-select: text; }

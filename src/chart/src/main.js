@@ -156,7 +156,8 @@ function step(dir) {
   const order = byScore().filter(matches);
   if (!order.length) return;
   const i = order.findIndex((t) => t.key === st.sel);
-  select(order[(i + dir + order.length) % order.length].key);
+  const j = i < 0 ? (dir > 0 ? 0 : order.length - 1) : (i + dir + order.length) % order.length;
+  select(order[j].key);
 }
 
 function toast(s) {
@@ -231,10 +232,11 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     e.preventDefault();
     if (qs.style.display === 'block') return toggleQS();
+    if (q.style.display === 'inline-block') return closeSearch();
     if (st.sel) return select(null);
     return post({ type: 'hide' });
   }
-  if ((m && k === 'o') || e.key === 'Enter') { e.preventDefault(); return openIssue(); }
+  if ((m && k === 'o') || (e.key === 'Enter' && document.activeElement.tagName !== 'BUTTON')) { e.preventDefault(); return openIssue(); }
   if (m && k === 'r') { e.preventDefault(); return post({ type: 'refetch' }); }
   if (m && k === 'f') { e.preventDefault(); return openSearch(); }
   if (m && e.key === ',') { e.preventDefault(); return post({ type: 'openSettings' }); }
