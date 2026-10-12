@@ -1,0 +1,26 @@
+{
+  "tasks": [
+    { "key": "SEC-5", "summary": "Rotate leaked Stripe API key", "status": "In Progress", "priority": "Highest",
+      "due": "2026-10-12", "url": "https://acme.atlassian.net/browse/SEC-5",
+      "value": 0.95, "effort": 0.1, "urgency": 1.0,
+      "missing": { "value": false, "effort": false, "urgency": false },
+      "score": 3.5625, "rank": 1, "fire": true, "changed": false },
+    { "key": "PAY-412", "summary": "Refund webhook returns 500 for partial refunds", "status": "To Do", "priority": "High",
+      "due": null, "url": "https://acme.atlassian.net/browse/PAY-412",
+      "value": 0.92, "effort": 0.2, "urgency": 0.95,
+      "missing": { "value": false, "effort": false, "urgency": false },
+      "score": 2.668, "rank": 2, "fire": true, "changed": true },
+    { "key": "DATA-19", "summary": "Rebuild data warehouse on ClickHouse", "status": "Backlog", "priority": null,
+      "due": null, "url": "https://acme.atlassian.net/browse/DATA-19",
+      "value": 0.8, "effort": 0.5, "urgency": 0.2,
+      "missing": { "value": false, "effort": true, "urgency": false },
+      "score": 0.7, "rank": null, "fire": false, "changed": false }
+  ],
+  "view": { "yaw": -179.7, "pitch": 33.9, "zoom": 1 },
+  "settings": { "labelMode": "smart", "stemStyle": "dotted", "stemOpacity": 30, "colorMode": "rgb", "grid": true,
+                "zoneNames": true, "rotation": "limited", "panelOpacity": 100, "alwaysOnTop": true, "refreshMinutes": 5 },
+  "status": { "syncedAt": "2026-10-12T10:42:00Z", "banner": null, "truncated": null },
+  "presets": [ { "id": "my-open-work", "name": "My open work" } ],
+  "activePresetId": "my-open-work",
+  "configured": true
+}
