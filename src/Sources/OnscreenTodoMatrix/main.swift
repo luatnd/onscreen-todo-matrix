@@ -1,2 +1,1 @@
-import OTMCore
-print("onscreen-todo-matrix \(OTMCoreVersion.string)")
+print("onscreen-todo-matrix")
