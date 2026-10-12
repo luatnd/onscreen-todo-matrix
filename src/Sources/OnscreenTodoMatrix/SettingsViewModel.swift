@@ -48,8 +48,13 @@ final class SettingsViewModel: ObservableObject {
 
     func loadFields() async {
         guard let api = try? model.makeAPI() else { return }
-        fields = ((try? await api.fields()) ?? []).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        priorities = (try? await api.priorities()) ?? []
+        do {
+            fields = try await api.fields().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        } catch {
+            connectionStatus = Self.describe(error)
+            return
+        }
+        if let p = try? await api.priorities() { priorities = p }
         if !fields.isEmpty && !isConnected { connectionStatus = "Connected" }
         let suggested = DefaultMappings.suggest(fields: fields, current: model.config.axes)
         if suggested != model.config.axes {

@@ -27,7 +27,7 @@ struct SettingsView: View {
 
     private var setupHeader: some View {
         HStack(spacing: 14) {
-            step("1. Connect", done: vm.isConnected || model.storedToken != nil && model.config.siteURL != nil)
+            step("1. Connect", done: vm.isConnected || (model.storedToken != nil && model.config.siteURL != nil))
             step("2. Filter", done: !model.config.presets.isEmpty)
             step("3. Axes", done: model.config.axes.isComplete)
             Spacer()
@@ -39,7 +39,6 @@ struct SettingsView: View {
                 }
             }
             .disabled(tab == .axes && !model.isConfigured)
-            .keyboardShortcut(.defaultAction)
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
         .background(Color.accentColor.opacity(0.08))
@@ -179,10 +178,11 @@ struct AxisEditor: View {
                 }
             )) {
                 Text("— none —").tag("")
-                if let current = cfg.mapping?.fieldId, !vm.fields.contains(where: { $0.id == current }) {
-                    Text(current).tag(current)
+                let usable = vm.usableFields(matching: filter)
+                if let current = cfg.mapping?.fieldId, !usable.contains(where: { $0.id == current }) {
+                    Text(vm.fields.first(where: { $0.id == current })?.name ?? current).tag(current)
                 }
-                ForEach(vm.usableFields(matching: filter)) { f in
+                ForEach(usable) { f in
                     Text("\(f.name)  ·  \(f.schemaType ?? "?")").tag(f.id)
                 }
             }
