@@ -47,8 +47,10 @@ final class SettingsViewModel: ObservableObject {
         newPreset = NewPresetRequest(accountId: accountId)
     }
 
-    func loadFields() async {
-        guard let account = model.activeAccount, let api = try? model.makeAPI(accountId: account.id) else { return }
+    /// Loads fields/priorities and applies the suggested mapping for `accountId` (default: the active account).
+    func loadFields(accountId: String? = nil) async {
+        guard let account = accountId.flatMap({ model.config.account(id: $0) }) ?? model.activeAccount,
+              let api = try? model.makeAPI(accountId: account.id) else { return }
         guard let loaded = try? await api.fields() else { return }
         fields = loaded.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         if let p = try? await api.priorities() { priorities = p }

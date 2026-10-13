@@ -56,6 +56,7 @@ struct AccountsTab: View {
             Button("Remove", role: .destructive) {
                 model.removeAccount(id: account.id)
                 status[account.id] = nil
+                openRequestedForm()
             }
         } message: { _ in
             Text("Its presets and its API token in the Keychain are deleted too.")
@@ -153,7 +154,7 @@ struct AccountsTab: View {
     /// Opens the form the panel asked for (vm.editAccountId), or the Add form when there is no account yet.
     private func openRequestedForm() {
         if let id = vm.editAccountId, let account = model.config.account(id: id) {
-            edit(account)
+            if draft == nil || draft?.id != id { edit(account) }
         } else if model.config.accounts.isEmpty, draft == nil {
             draft = AccountDraft(name: "Personal")
         }
@@ -181,9 +182,11 @@ struct AccountsTab: View {
             draft = nil
             vm.editAccountId = nil
             formMessage = ""
-            if model.activeAccount?.id == id { await model.refresh(.manual) }
+            await vm.loadFields(accountId: id) // auto-map this account's axes, as in v1.1
+            await model.refresh(.manual)
         } catch {
             formMessage = SettingsViewModel.describe(error)
+            status[id] = formMessage
         }
     }
 
