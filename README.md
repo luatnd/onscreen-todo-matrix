@@ -8,6 +8,7 @@
   - [v1.1.0 — as built](specs/arch-20261013-onscreen-todo-matrix-design-v1.1.0.md)
   - [v1.2.0 — multiple Jira accounts (draft)](specs/arch-20261013-onscreen-todo-matrix-design-v1.2.0.md)
 - Implementation plan v1: [plans/arch-20261012-onscreen-todo-matrix-plan.md](plans/arch-20261012-onscreen-todo-matrix-plan.md)
+- Implementation plan v1.2.0 (multiple Jira accounts): [plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md](plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md)
 - Interactive prototype: [prototype/panel-prototype.html](prototype/panel-prototype.html)
 
 # TODO
@@ -18,7 +19,7 @@
 - [x] Implementation plan (writing-plans)
 - [x] Implement v1 (TDD + code review per phase)
 - [x] Post-v1 requests: Glance brand, DMG, reset pill, panel size, not always-on-top, last view, double-click opens Jira (spec v1.1.0)
-- [ ] v1.2.0: multiple Jira accounts, per-account presets/axes, "+ New preset…" menu — spec review → plan → implement
+- [x] v1.2.0: multiple Jira accounts, per-account presets/axes, "+ New preset…" menu, axis labels show mapped fields — spec → plan → implement
 - [ ] Later: combine multiple fields per axis; editable scoring; signed + notarized release; Homebrew cask
 
 # Build & run
@@ -30,7 +31,7 @@ cd productivity/onscreen-todo-matrix/src
 open "build/Glance.app"
 ~~~
 
-Installer: `./scripts/build-dmg.sh` → `build/Glance-1.0.0.dmg`; open it and drag Glance to Applications.
+Installer: `./scripts/build-dmg.sh` → `build/Glance-1.2.0.dmg`; open it and drag Glance to Applications. Upgrading from 1.1 migrates your settings automatically (backup kept as `config.v1.json` in `~/Library/Application Support/onscreen-todo-matrix/`).
 
 The build is ad-hoc signed: a DMG built on your own Mac opens normally; on another Mac macOS blocks it the first time → System Settings → Privacy & Security → "Open Anyway" (or `xattr -dr com.apple.quarantine /Applications/Glance.app`). Notarized builds need an Apple Developer ID (future).
 
