@@ -76,10 +76,17 @@ public enum AxisMapping: Codable, Equatable, Sendable {
 public struct AxisConfig: Codable, Equatable, Sendable {
     public var mapping: AxisMapping?
     public var missingDefault: Double
-    public init(mapping: AxisMapping? = nil, missingDefault: Double = 0.5) {
+    /// Display name of the mapped Jira field (JiraField.name), saved with the mapping so the chart's axis
+    /// label works offline (§11.8.1). nil → the label falls back to the field id. Optional: older files decode.
+    public var fieldName: String?
+    public init(mapping: AxisMapping? = nil, missingDefault: Double = 0.5, fieldName: String? = nil) {
         self.mapping = mapping
         self.missingDefault = missingDefault
+        self.fieldName = fieldName
     }
+
+    /// Axis-label name: the saved field name, else the field id; nil when unmapped.
+    public var labelName: String? { mapping.map { fieldName ?? $0.fieldId } }
 }
 
 public struct AxesConfig: Codable, Equatable, Sendable {

@@ -187,8 +187,11 @@ struct AxisEditor: View {
             Picker("Field", selection: Binding(
                 get: { cfg.mapping?.fieldId ?? "" },
                 set: { id in
-                    let mapping = vm.fields.first(where: { $0.id == id }).flatMap { DefaultMappings.mapping(for: $0) }
-                    update { $0.mapping = mapping }
+                    let field = vm.fields.first(where: { $0.id == id })
+                    update {
+                        $0.mapping = field.flatMap { DefaultMappings.mapping(for: $0) }
+                        $0.fieldName = field?.name
+                    }
                 }
             )) {
                 Text("— none —").tag("")

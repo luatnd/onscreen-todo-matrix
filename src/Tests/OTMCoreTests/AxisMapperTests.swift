@@ -208,7 +208,32 @@ private func norm(_ raw: JSONValue?, _ m: AxisMapping, range: ClosedRange<Double
     @Test func neverOverwritesExistingMappings() {
         var cur = AxesConfig()
         cur.urgency.mapping = .date(fieldId: "duedate", horizonDays: 7, invert: false)
-        #expect(DefaultMappings.suggest(fields: fields, current: cur).urgency == cur.urgency)
+        #expect(DefaultMappings.suggest(fields: fields, current: cur).urgency.mapping == cur.urgency.mapping)
+    }
+
+    @Test func suggestSavesFieldDisplayNames() {
+        var cur = AxesConfig()
+        cur.value.mapping = .option(fieldId: "customfield_10110", levels: [:])     // not in the field list
+        let a = DefaultMappings.suggest(fields: fields, current: cur)
+        #expect(a.urgency.fieldName == "Priority")
+        #expect(a.effort.fieldName == "Story point estimate")
+        #expect(a.value.fieldName == nil)
+        #expect(a.value.labelName == "customfield_10110")                      // falls back to the field id
+    }
+
+    @Test func withFieldNamesRefreshesKnownFieldsOnly() {
+        var cur = AxesConfig()
+        cur.urgency = AxisConfig(mapping: .date(fieldId: "duedate", horizonDays: 7, invert: false), fieldName: "Old name")
+        cur.value = AxisConfig(mapping: .number(fieldId: "gone", min: nil, max: nil, invert: false), fieldName: "Kept")
+        let a = DefaultMappings.withFieldNames(cur, fields: fields)
+        #expect(a.urgency.fieldName == "Due date")
+        #expect(a.value.fieldName == "Kept")
+        #expect(a.effort.labelName == nil)
+    }
+
+    @Test func axisConfigWithoutFieldNameStillDecodes() throws {
+        let c = try JSONDecoder().decode(AxisConfig.self, from: Data(#"{"missingDefault":0}"#.utf8))
+        #expect(c == AxisConfig(mapping: nil, missingDefault: 0))
     }
 
     @Test func priorityLevelsMatchSpec() {

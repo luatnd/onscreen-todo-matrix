@@ -124,7 +124,18 @@ public enum DefaultMappings {
         }
     }
 
-    /// Pre-fills empty axes: urgency ← Priority, effort ← Story Points / Story point estimate / Original estimate.
+    /// Saves each mapped axis' field display name from the loaded field list (unknown ids keep their name).
+    public static func withFieldNames(_ axes: AxesConfig, fields: [JiraField]) -> AxesConfig {
+        var a = axes
+        for axis in Axis.allCases {
+            guard let id = a[axis].mapping?.fieldId, let field = fields.first(where: { $0.id == id }) else { continue }
+            a[axis].fieldName = field.name
+        }
+        return a
+    }
+
+    /// Pre-fills empty axes: urgency ← Priority, effort ← Story Points / Story point estimate / Original estimate;
+    /// then refreshes the saved field names of all mapped axes.
     public static func suggest(fields: [JiraField], current: AxesConfig) -> AxesConfig {
         var a = current
         if a.urgency.mapping == nil, fields.contains(where: { $0.id == "priority" }) {
@@ -138,6 +149,6 @@ public enum DefaultMappings {
                 a.effort.mapping = .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false)
             }
         }
-        return a
+        return withFieldNames(a, fields: fields)
     }
 }
