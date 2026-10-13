@@ -375,6 +375,7 @@ TDD per AGENTS.md (`test-driven-development` skill), code review (`requesting-co
 | D13 | **Field + value mapping per axis** | Fixed fields | More setup | User requirement ("map field & field values to the axes, e.g. Priority for urgent level") |
 | D14 | **Swift (SwiftUI + AppKit) + WKWebView chart** | Go + Wails v3 (pinned v3.0.0-beta.28); Tauri v2 (Rust); Electron | Wails: Go preference fits and covers hotkey/NSPanel/tray, but v3 is pre-release and opacity + launch-at-login need cgo glue. Tauri: mature but Rust, NSPanel via community plugin. Electron: 150+ MB. Swift: not Go, second toolchain | The app is mostly macOS integration with a tiny back end, so Go's strengths go unused; Swift has every requirement first-party, no beta risk, smallest footprint; chart JS reused unchanged. Confirmed by the user per the AGENTS.md "confirm non-Go" rule |
 | D15 | **Idea folder `productivity/onscreen-todo-matrix/`** | `tools/`, `personal/` | New top-level category | Existing categories (`ai/`, `infra/`, `auto-earning/`) don't fit; user approved |
+| D16 | **Brand name "Glance — Onscreen Todo Matrix"** | Trifocal, Priority Prism, Lumen | 'Glance' is generic and may clash with other apps | User's choice; says the app's purpose (2-second look); internal identifiers unchanged so existing config/token carry over |
 
 ---
 

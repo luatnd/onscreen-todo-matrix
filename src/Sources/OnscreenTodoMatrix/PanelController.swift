@@ -23,7 +23,7 @@ final class PanelController: NSObject, NSWindowDelegate {
             backing: .buffered, defer: false
         )
         super.init()
-        panel.title = "onscreen-todo-matrix"
+        panel.title = "Glance"
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false

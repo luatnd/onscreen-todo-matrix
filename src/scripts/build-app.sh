@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds "Onscreen Todo Matrix.app" (ad-hoc signed) into build/.
+# Builds "Glance.app" (ad-hoc signed) into build/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -8,7 +8,7 @@ swift test
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)"
 
-APP="build/Onscreen Todo Matrix.app"
+APP="build/Glance.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/chart"
 cp "$BIN/OnscreenTodoMatrix" "$APP/Contents/MacOS/"

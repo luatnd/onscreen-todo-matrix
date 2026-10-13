@@ -1,6 +1,6 @@
-# onscreen-todo-matrix
+# Glance — Onscreen Todo Matrix
 
-An open-source macOS floating panel that shows your Jira Cloud issues as a 3D priority space (Value × Effort × Urgency). Press ⌥Space for a 2-second look at what to do next, what's on fire, and the overall shape of your workload.
+**Glance — Onscreen Todo Matrix** (app: `Glance.app`; repo/internal name: `onscreen-todo-matrix`) is an open-source macOS floating panel that shows your Jira Cloud issues as a 3D priority space (Value × Effort × Urgency). Press ⌥Space for a 2-second look at what to do next, what's on fire, and the overall shape of your workload.
 
 - Idea: [idea-v1.0.0.md](idea-v1.0.0.md)
 - Feature (non-technical): [features/product-20261012-3d-priority-panel.md](features/product-20261012-3d-priority-panel.md)
@@ -22,7 +22,11 @@ Requirements: macOS 14+, Xcode 26 (Swift 6.2 toolchain), Node 22.
 ~~~bash
 cd productivity/onscreen-todo-matrix/src
 ./scripts/build-app.sh
-open "build/Onscreen Todo Matrix.app"
+open "build/Glance.app"
 ~~~
+
+Installer: `./scripts/build-dmg.sh` → `build/Glance-1.0.0.dmg`; open it and drag Glance to Applications.
+
+The build is ad-hoc signed: a DMG built on your own Mac opens normally; on another Mac macOS blocks it the first time → System Settings → Privacy & Security → "Open Anyway" (or `xattr -dr com.apple.quarantine /Applications/Glance.app`). Notarized builds need an Apple Developer ID (future).
 
 Development: `swift test` (core logic), `cd chart && npm test` (chart), `swift run OnscreenTodoMatrix` (runs with `chart/dist` from the source tree; run `npm run build` in `chart/` first). Manual window checks: [src/docs/manual-checklist.md](src/docs/manual-checklist.md).

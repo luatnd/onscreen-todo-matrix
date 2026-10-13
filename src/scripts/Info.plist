@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>Onscreen Todo Matrix</string>
-  <key>CFBundleDisplayName</key><string>Onscreen Todo Matrix</string>
-  <key>CFBundleIdentifier</key><string>io.github.luatnd.onscreen-todo-matrix</string>
+  <key>CFBundleName</key><string>Glance</string>
+  <key>CFBundleDisplayName</key><string>Glance</string>
+  <key>CFBundleIdentifier</key><string>io.github.luatnd.glance</string>
   <key>CFBundleExecutable</key><string>OnscreenTodoMatrix</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>1.0.0</string>

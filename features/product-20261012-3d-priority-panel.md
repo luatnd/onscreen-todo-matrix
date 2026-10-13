@@ -1,4 +1,4 @@
-# Feature: 3D Priority Panel for Jira
+# Feature: 3D Priority Panel for Jira (Glance — Onscreen Todo Matrix)
 
 **Date:** 2026-10-12
 **Category:** Productivity / Desktop tool / Jira

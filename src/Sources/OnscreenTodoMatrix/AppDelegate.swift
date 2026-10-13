@@ -76,13 +76,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit onscreen-todo-matrix", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(withTitle: "Quit Glance", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         statusItem.menu = menu
     }
 
     private func updateIcon(warning: Bool) {
         let name = warning ? "exclamationmark.triangle" : "circle.hexagongrid"
-        statusItem?.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: "onscreen-todo-matrix")
+        statusItem?.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: "Glance")
     }
 
     @objc private func togglePanel() { panel.toggle() }

@@ -25,7 +25,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
                 self?.window?.close()
             }
             let w = NSWindow(contentViewController: NSHostingController(rootView: view))
-            w.title = "onscreen-todo-matrix Settings"
+            w.title = "Glance Settings"
             w.setContentSize(NSSize(width: 640, height: 560))
             w.isReleasedWhenClosed = false
             w.delegate = self

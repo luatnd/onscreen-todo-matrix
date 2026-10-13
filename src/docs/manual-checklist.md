@@ -1,6 +1,6 @@
 # Manual checklist (window behavior; not covered by unit tests)
 
-Run after `./scripts/build-app.sh` and `open "build/Onscreen Todo Matrix.app"`.
+Run after `./scripts/build-app.sh` and `open "build/Glance.app"`.
 
 - [ ] Status-bar icon appears; no Dock icon; menu has Show / Hide Panel, Refresh Now, Settings…, Quit.
 - [ ] First launch without config opens Settings with the 1-2-3 setup header.
