@@ -24,9 +24,9 @@ public enum ConfigMigration {
 
     /// Persists a `.legacy` config:
     /// 1. copy `config.json` → `config.v1.json` (kept);
-    /// 2. copy the Keychain token `jira-api-token` → `jira-api-token:default`, delete the legacy item only after
+    /// 2. move `last-fetch.json` → `cache/<activePresetId>.json` (before the Keychain step, so a Keychain failure keeps the cache);
+    /// 3. copy the Keychain token `jira-api-token` → `jira-api-token:default`, delete the legacy item only after
     ///    reading the copy back;
-    /// 3. move `last-fetch.json` → `cache/<activePresetId>.json`;
     /// 4. save the new format.
     /// Returns false — leaving `config.json` and the legacy token untouched — if step 1, 2 or 4 fails.
     /// Every step is idempotent, so the next launch simply retries.
@@ -34,6 +34,10 @@ public enum ConfigMigration {
         let fm = FileManager.default
         if !fm.fileExists(atPath: store.legacyBackupURL.path) {
             guard (try? fm.copyItem(at: store.url, to: store.legacyBackupURL)) != nil else { return false }
+        }
+        // Before the Keychain step: a Keychain failure must not strand the cache.
+        if let preset = config.activePreset {
+            cache.migrateLegacy(toPresetId: preset.id, accountId: preset.accountId)
         }
         if config.account(id: JiraAccount.defaultId) != nil {
             do {
@@ -47,9 +51,6 @@ public enum ConfigMigration {
             } catch {
                 return false
             }
-        }
-        if let preset = config.activePreset {
-            cache.migrateLegacy(toPresetId: preset.id, accountId: preset.accountId)
         }
         return (try? store.save(config)) != nil
     }

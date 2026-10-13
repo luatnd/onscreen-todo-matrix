@@ -1,12 +1,49 @@
 import Combine
 import Foundation
 
+/// Result of `AppModel.selectPreset(id:)`.
+public enum PresetSelection: Equatable, Sendable {
+    case selected
+    /// The preset's account no longer exists: it cannot be activated until reassigned (§11.2).
+    case accountMissing
+    case notFound
+}
+
+/// Result of a JQL Test in Settings.
+public enum JQLTestResult: Equatable, Sendable {
+    case count(Int)
+    /// Jira rejected the JQL (400); blocks "Create & show".
+    case jqlError(String)
+    /// Anything else (network, sign-in…); does not block saving.
+    case failed(String)
+
+    public var text: String {
+        switch self {
+        case .count(let n): return "\(n) issues match"
+        case .jqlError(let m): return "JQL error: \(m)"
+        case .failed(let m): return m
+        }
+    }
+}
+
+extension AppConfig {
+    /// New preset sheet: Save is disabled while the name is empty/duplicate (within the account),
+    /// the account is unknown, or the last Test failed with a JQL error (§11.7).
+    public func canCreatePreset(name: String, accountId: String, lastTest: JQLTestResult?) -> Bool {
+        guard account(id: accountId) != nil, isPresetNameValid(name, accountId: accountId) else { return false }
+        if case .jqlError = lastTest { return false }
+        return true
+    }
+}
+
 @MainActor
 public final class AppModel: ObservableObject {
     @Published public private(set) var renderState: RenderState = .empty
     @Published public private(set) var config: AppConfig
     @Published public private(set) var issues: [JiraIssue] = []
     @Published public private(set) var unmappedLabels: [Axis: [String]] = [:]
+    /// Accounts whose last fetch failed with 401/403 (⚠ in the preset menu, error in the Accounts tab).
+    @Published public private(set) var authFailedAccounts: Set<String> = []
     public private(set) var configWasCorrupt = false
     /// The v1.1 → v1.2 migration could not finish; the old setup is kept (§11.10).
     public private(set) var migrationFailed = false
@@ -23,12 +60,16 @@ public final class AppModel: ObservableObject {
     private var tokenErrorAccounts: Set<String> = []
     private var syncedAt: Date?
     private var banner: String?
+    private var bannerTab: String?
     private var truncated: String?
     private var lastMapped: [MappedTask] = []
     private var isRefreshing = false
     private var rerunRequested = false
+    private var fieldNamesTried: Set<String> = []
 
     public static let issueCap = 500
+    public static let migrationBanner = "Could not migrate settings · Open settings"
+    public static let setupMessage = "Finish setup to see your Jira issues."
 
     public init(configStore: ConfigStore, cache: IssueCache, tokenStore: TokenStore, scheduler: RefreshScheduler,
                 makeClient: @escaping (URL, String, String) -> JiraAPI,
@@ -49,27 +90,35 @@ public final class AppModel: ObservableObject {
         case .corrupt: config = AppConfig(); configWasCorrupt = true
         }
         for account in config.accounts { loadToken(account.id) }
-        if let preset = config.activePreset, let cached = cache.load(presetId: preset.id), cached.accountId == preset.accountId {
-            issues = cached.issues
-            syncedAt = cached.fetchedAt
-        }
+        loadActiveCache()
         if let id = activeAccount?.id, tokenErrorAccounts.contains(id) {
             banner = "Keychain access denied · re-enter your API token in settings"
+            bannerTab = "accounts"
         }
         rebuild(previous: nil)
     }
+
+    // MARK: - Accounts
 
     public var activeAccount: JiraAccount? { config.activeAccount }
 
     public func storedToken(accountId: String) -> String? { tokens[accountId] }
 
-    /// Site, email, token and all three axes mapped.
+    /// Site, email and token present (the account can talk to Jira).
+    public func hasCredentials(_ account: JiraAccount) -> Bool {
+        account.siteURL != nil && !account.email.isEmpty && !(tokens[account.id] ?? "").isEmpty
+    }
+
+    /// Credentials and all three axes mapped.
     public func isAccountConfigured(_ account: JiraAccount) -> Bool {
-        account.siteURL != nil && !account.email.isEmpty && !(tokens[account.id] ?? "").isEmpty && account.axes.isComplete
+        hasCredentials(account) && account.axes.isComplete
     }
 
     /// The active preset's account is configured (§11.7).
     public var isConfigured: Bool { activeAccount.map(isAccountConfigured) ?? false }
+
+    /// Sign-in (401/403) or Keychain error for this account.
+    public func hasError(accountId: String) -> Bool { accountErrors.contains(accountId) }
 
     /// "default" for the first account (so the pre-filled "My open work" preset belongs to it), a UUID afterwards.
     public func newAccountId() -> String {
@@ -82,6 +131,89 @@ public final class AppModel: ObservableObject {
         return makeClient(site, account.email, token)
     }
 
+    /// Inserts or updates the account and stores its token in Keychain (token first: a Keychain error changes nothing).
+    public func saveAccount(_ account: JiraAccount, token: String) throws {
+        try tokenStore.write(token, accountId: account.id)
+        tokens[account.id] = token
+        tokenErrorAccounts.remove(account.id)
+        authFailedAccounts.remove(account.id)
+        migrationFailed = false
+        var c = config
+        c.upsertAccount(account)
+        updateConfig(c)
+    }
+
+    /// Removes the account, its presets (and their caches) and its Keychain item (§11.3, §11.7).
+    public func removeAccount(id: String) {
+        try? tokenStore.delete(accountId: id)
+        if id == JiraAccount.defaultId { try? tokenStore.deleteLegacy() }
+        tokens[id] = nil
+        tokenErrorAccounts.remove(id)
+        authFailedAccounts.remove(id)
+        var c = config
+        for p in c.presets where p.accountId == id { cache.delete(presetId: p.id) }
+        c.accounts.removeAll { $0.id == id }
+        c.presets.removeAll { $0.accountId == id }
+        if !c.presets.contains(where: { $0.id == c.activePresetId }) {
+            c.activePresetId = c.menuOrderedPresets.first?.id ?? ""
+        }
+        updateConfig(c)
+    }
+
+    public func updateAxes(accountId: String, _ change: (inout AxesConfig) -> Void) {
+        var c = config
+        guard let i = c.accounts.firstIndex(where: { $0.id == accountId }) else { return }
+        change(&c.accounts[i].axes)
+        updateConfig(c)
+    }
+
+    // MARK: - Presets
+
+    /// Activates a preset and shows its cached issues instantly; the caller then runs `refresh(.manual)`.
+    /// The choice is persisted immediately, so it is restored on launch.
+    @discardableResult
+    public func selectPreset(id: String) -> PresetSelection {
+        guard let preset = config.presets.first(where: { $0.id == id }) else { return .notFound }
+        guard config.account(id: preset.accountId) != nil else { return .accountMissing }
+        var c = config
+        c.activePresetId = id
+        updateConfig(c)
+        return .selected
+    }
+
+    public func addPreset(_ preset: JQLPreset, activate: Bool) {
+        var c = config
+        c.presets.append(preset)
+        updateConfig(c)
+        if activate { selectPreset(id: preset.id) }
+    }
+
+    public func deletePreset(id: String) {
+        var c = config
+        c.presets.removeAll { $0.id == id }
+        cache.delete(presetId: id)
+        if !c.presets.contains(where: { $0.id == c.activePresetId }) {
+            c.activePresetId = c.menuOrderedPresets.first?.id ?? ""
+        }
+        updateConfig(c)
+    }
+
+    /// JQL Test for Settings: approximate match count on that account's site.
+    public func testJQL(_ jql: String, accountId: String) async -> JQLTestResult {
+        do {
+            return .count(try await makeAPI(accountId: accountId).approximateCount(jql: jql))
+        } catch JiraError.badRequest(let message) {
+            return .jqlError(message)
+        } catch let error as JiraError {
+            return .failed(Self.bannerText(error, syncedAt: nil))
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
+
+    // MARK: - Refresh
+
+    /// Fetches only the active preset: its account's site + token, its JQL, its account's axes (§11.5).
     public func refresh(_ trigger: RefreshTrigger) async {
         if isRefreshing {
             if trigger == .manual { rerunRequested = true }
@@ -91,7 +223,7 @@ public final class AppModel: ObservableObject {
               scheduler.shouldRefresh(trigger, intervalMinutes: config.quick.refreshMinutes),
               let api = try? makeAPI(accountId: preset.accountId) else { return }
         isRefreshing = true
-        await fetch(api, preset: preset)
+        if await fetch(api, preset: preset) { await backfillFieldNames(api, accountId: preset.accountId) }
         isRefreshing = false
         if rerunRequested {
             rerunRequested = false
@@ -99,51 +231,74 @@ public final class AppModel: ObservableObject {
         }
     }
 
-    private func fetch(_ api: JiraAPI, preset: JQLPreset) async {
+    /// Once per account per run: saves display names for mapped axes that have none (labels fall back to ids on failure).
+    private func backfillFieldNames(_ api: JiraAPI, accountId: String) async {
+        let missing = { (a: JiraAccount) in Axis.allCases.contains { a.axes[$0].mapping != nil && a.axes[$0].fieldName == nil } }
+        guard !fieldNamesTried.contains(accountId), let account = config.account(id: accountId), missing(account) else { return }
+        fieldNamesTried.insert(accountId)
+        let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
+        guard let fields = try? await api.fields(), var c = Optional(config),
+              let i = c.accounts.firstIndex(where: { $0.id == accountId }) else { return }
+        c.accounts[i].axes = DefaultMappings.withFieldNames(c.accounts[i].axes, fields: fields)
+        guard c != config else { return }
+        config = c
+        try? configStore.save(c)
+        rebuild(previous: previous)
+    }
+
+    @discardableResult
+    private func fetch(_ api: JiraAPI, preset: JQLPreset) async -> Bool {
         let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
         do {
             let result = try await api.search(jql: preset.jql, fields: fetchFields(), cap: Self.issueCap)
+            let fetchedAt = now()
+            authFailedAccounts.remove(preset.accountId)
+            try? cache.save(CachedFetch(issues: result.issues, fetchedAt: fetchedAt, accountId: preset.accountId),
+                            presetId: preset.id)
+            // The user switched presets while this was in flight: cached for later, never shown under another preset.
+            guard isActive(preset) else { rebuild(previous: nil); return true }
             scheduler.recordSuccess()
             issues = result.issues
-            let fetchedAt = now()
             syncedAt = fetchedAt
             banner = nil
+            bannerTab = nil
             truncated = result.truncated
                 ? "Showing \(result.issues.count) of \(result.approximateTotal.map(String.init) ?? "\(result.issues.count)+") · narrow your JQL"
                 : nil
-            try? cache.save(CachedFetch(issues: result.issues, fetchedAt: fetchedAt, accountId: preset.accountId), presetId: preset.id)
             rebuild(previous: previous)
+            return true
         } catch let error as JiraError {
+            if error == .unauthorized { authFailedAccounts.insert(preset.accountId) }
+            // A stale failure must neither pause nor banner the preset the user switched to.
+            guard isActive(preset) else { rebuild(previous: nil); return false }
             scheduler.recordFailure(error)
-            banner = Self.bannerText(error, syncedAt: syncedAt)
+            banner = Self.bannerText(error, syncedAt: syncedAt, accountName: config.account(id: preset.accountId)?.name)
+            bannerTab = error == .unauthorized ? "accounts" : nil
             rebuild(previous: nil)
+            return false
         } catch {
+            guard isActive(preset) else { return false }
             banner = "Refresh failed: \(error.localizedDescription)"
+            bannerTab = nil
             rebuild(previous: nil)
+            return false
         }
     }
 
+    // MARK: - Config
+
+    /// Saves settings changes. Clears a stale banner and resumes the scheduler (a 401 pause on one account must not
+    /// block another). When the active preset or its account changes, that preset's cache is shown instantly.
     public func updateConfig(_ newConfig: AppConfig) {
-        banner = nil // stale error; the next refresh re-sets it if still failing
-        persist(newConfig)
+        let before = config.activePreset
+        banner = nil
+        bannerTab = nil
+        config = newConfig
+        try? configStore.save(newConfig)
         scheduler.resume()
-    }
-
-    /// Inserts or updates the account and stores its token in Keychain (token first: a Keychain error changes nothing).
-    public func saveAccount(_ account: JiraAccount, token: String) throws {
-        try tokenStore.write(token, accountId: account.id)
-        tokens[account.id] = token
-        tokenErrorAccounts.remove(account.id)
-        var c = config
-        c.upsertAccount(account)
-        updateConfig(c)
-    }
-
-    public func updateAxes(accountId: String, _ change: (inout AxesConfig) -> Void) {
-        var c = config
-        guard let i = c.accounts.firstIndex(where: { $0.id == accountId }) else { return }
-        change(&c.accounts[i].axes)
-        updateConfig(c)
+        let after = newConfig.activePreset
+        if before?.id != after?.id || before?.accountId != after?.accountId { loadActiveCache() }
+        rebuild(previous: nil)
     }
 
     public func setQuickSetting(key: String, value: JSONValue) {
@@ -169,25 +324,20 @@ public final class AppModel: ObservableObject {
         try? configStore.save(c)
     }
 
-    public func selectPreset(id: String) {
-        guard config.presets.contains(where: { $0.id == id }) else { return }
-        var c = config
-        c.activePresetId = id
-        updateConfig(c)
-    }
-
+    /// Issue URLs use the active preset's account site.
     public func issueURL(key: String) -> URL? {
         activeAccount?.siteURL?.appendingPathComponent("browse").appendingPathComponent(key)
     }
 
-    public static func bannerText(_ error: JiraError, syncedAt: Date?) -> String {
+    public static func bannerText(_ error: JiraError, syncedAt: Date?, accountName: String? = nil) -> String {
         switch error {
         case .network:
             guard let syncedAt else { return "Offline · no cached data" }
             let f = DateFormatter()
             f.dateFormat = "HH:mm"
             return "Offline · showing data from \(f.string(from: syncedAt))"
-        case .unauthorized: return "Jira sign-in failed · Open settings"
+        case .unauthorized:
+            return accountName.map { "Jira sign-in failed (\($0)) · Open settings" } ?? "Jira sign-in failed · Open settings"
         case .rateLimited: return "Jira rate limit · retrying later"
         case .badRequest(let m): return "JQL error: \(m)"
         case .http(let code): return "Jira error \(code)"
@@ -198,14 +348,35 @@ public final class AppModel: ObservableObject {
 
     // MARK: - Private
 
+    private var accountErrors: Set<String> { authFailedAccounts.union(tokenErrorAccounts) }
+
+    private func isActive(_ preset: JQLPreset) -> Bool {
+        config.activePreset?.id == preset.id && config.activePreset?.accountId == preset.accountId
+    }
+
     private func loadToken(_ accountId: String) {
         do {
-            tokens[accountId] = try tokenStore.read(accountId: accountId)
+            var token = try tokenStore.read(accountId: accountId)
+            // Migration fallback (§11.10): until the keyed copy exists, the v1.1 item still works.
+            if token == nil, accountId == JiraAccount.defaultId { token = try tokenStore.readLegacy() }
+            tokens[accountId] = token
             tokenErrorAccounts.remove(accountId)
         } catch {
             tokens[accountId] = nil
             tokenErrorAccounts.insert(accountId)
         }
+    }
+
+    /// Shows the active preset's cache (its own issues and "synced" time), or nothing.
+    private func loadActiveCache() {
+        issues = []
+        syncedAt = nil
+        truncated = nil
+        lastMapped = []
+        guard let preset = config.activePreset, let cached = cache.load(presetId: preset.id),
+              cached.accountId == preset.accountId else { return }
+        issues = cached.issues
+        syncedAt = cached.fetchedAt
     }
 
     private func persist(_ newConfig: AppConfig) {
@@ -220,6 +391,18 @@ public final class AppModel: ObservableObject {
             if let id = activeAccount?.axes[axis].mapping?.fieldId, !out.contains(id) { out.append(id) }
         }
         return out
+    }
+
+    private func setup() -> RenderSetup? {
+        if isConfigured { return nil }
+        guard let preset = config.activePreset, let account = config.account(id: preset.accountId) else {
+            if config.accounts.isEmpty { return RenderSetup(message: Self.setupMessage, tab: "accounts") }
+            return config.activePreset == nil
+                ? RenderSetup(message: "Create a preset to see your Jira issues.", tab: "presets")
+                : RenderSetup(message: "This preset's account is missing · reassign it in settings", tab: "presets")
+        }
+        if !hasCredentials(account) { return RenderSetup(message: Self.setupMessage, tab: "accounts") }
+        return RenderSetup(message: "Map axes for \(account.name) to see this preset", tab: "axes")
     }
 
     private func rebuild(previous: [String: MappedTask]?) {
@@ -240,8 +423,16 @@ public final class AppModel: ObservableObject {
             }
         }
         unmappedLabels = unmapped
-        let status = RenderStatus(syncedAt: syncedAt, banner: banner ?? axisBanner, truncated: truncated)
-        renderState = RenderStateBuilder.build(tasks: lastMapped, previous: previous, config: config,
-                                               status: status, configured: isConfigured)
+        let status: RenderStatus
+        if let banner {
+            status = RenderStatus(syncedAt: syncedAt, banner: banner, truncated: truncated, bannerTab: bannerTab)
+        } else if migrationFailed {
+            status = RenderStatus(syncedAt: syncedAt, banner: Self.migrationBanner, truncated: truncated, bannerTab: "accounts")
+        } else {
+            status = RenderStatus(syncedAt: syncedAt, banner: axisBanner, truncated: truncated,
+                                  bannerTab: axisBanner == nil ? nil : "axes")
+        }
+        renderState = RenderStateBuilder.build(tasks: lastMapped, previous: previous, config: config, status: status,
+                                               configured: isConfigured, accountErrors: accountErrors, setup: setup())
     }
 }

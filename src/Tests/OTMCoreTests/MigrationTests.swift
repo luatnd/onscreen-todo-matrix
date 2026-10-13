@@ -151,6 +151,18 @@ import Testing
         #expect(m.renderState.tasks.map(\.key) == ["A-1"])
     }
 
+    @Test func keychainFailureStillMovesCacheForActivePreset() throws {
+        _ = try legacyStore(withCache: true)
+        let tokens = InMemoryTokenStore(legacyToken: "legacy-tok")
+        tokens.writeError = TokenStoreError.status(-25308)
+        let m = AppModel(configStore: ConfigStore(directory: dir), cache: IssueCache(directory: dir), tokenStore: tokens,
+                         scheduler: RefreshScheduler(), makeClient: { _, _, _ in FakeJiraAPI() })
+        #expect(m.migrationFailed)
+        let active = try #require(m.config.activePreset)
+        #expect(IssueCache(directory: dir).load(presetId: active.id)?.issues.map(\.key) == ["A-1"])
+        #expect(m.renderState.tasks.map(\.key) == ["A-1"])
+    }
+
     @Test func appModelReportsMigrationFailure() throws {
         _ = try legacyStore()
         let tokens = InMemoryTokenStore(legacyToken: "legacy-tok")
