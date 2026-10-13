@@ -25,13 +25,16 @@ struct AxesTab: View {
                 if fields.isEmpty || fieldsAccountId != accountId {
                     Text(loadMessage.isEmpty ? "Loading fields from this account's site…" : loadMessage)
                         .foregroundStyle(.secondary)
-                    Button("Reload fields") { Task { await loadFields(accountId) } }
                 } else if !loadMessage.isEmpty {
                     Text(loadMessage).foregroundStyle(.orange)
                 }
+                if !loadMessage.isEmpty {
+                    Button("Reload fields") { Task { await loadFields(accountId) } }
+                }
                 ForEach(OTMCore.Axis.allCases, id: \.self) { axis in
                     AxisEditor(axis: axis, accountId: accountId, model: model,
-                               fields: fieldsAccountId == accountId ? fields : [], priorities: priorities)
+                               fields: fieldsAccountId == accountId ? fields : [],
+                               priorities: fieldsAccountId == accountId ? priorities : [])
                 }
             } else {
                 Text("Add an account first (Accounts tab).").foregroundStyle(.secondary)
@@ -42,15 +45,20 @@ struct AxesTab: View {
     }
 
     /// A failed reload keeps the previously loaded fields of the same account and shows the error.
+    /// Every write after an await is dropped if the picker moved on (the old task was cancelled).
     private func loadFields(_ id: String) async {
         loadMessage = ""
         do {
             let r = try await vm.fetchFields(accountId: id)
+            guard !Task.isCancelled, id == accountId else { return }
             fields = r.fields
             priorities = r.priorities
             fieldsAccountId = id
         } catch {
-            loadMessage = SettingsViewModel.describe(error)
+            guard !Task.isCancelled, id == accountId,
+                  !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
+            loadMessage = (error as? JiraError) == .notConfigured
+                ? "Connect this account first (Accounts tab)." : SettingsViewModel.describe(error)
         }
     }
 }
@@ -95,7 +103,7 @@ struct AxisEditor: View {
                     let field = fields.first(where: { $0.id == id })
                     update {
                         $0.mapping = field.flatMap { DefaultMappings.mapping(for: $0) }
-                        $0.fieldName = field?.name
+                        $0.fieldName = $0.mapping == nil ? nil : field?.name
                     }
                 }
             )) {
