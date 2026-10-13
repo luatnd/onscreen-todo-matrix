@@ -128,6 +128,17 @@ import Testing
         #expect(c.menuOrderedPresets.map(\.id) == ["mine", "due", "team", "cw", "orphan"])
     }
 
+    @Test func activePresetFallbackSkipsOrphans() {
+        var c = AppConfig()
+        c.accounts = [JiraAccount(id: "a", name: "A", site: "a.atlassian.net", email: "a@x.io")]
+        c.presets = [
+            JQLPreset(id: "orphan", name: "O", jql: "x", accountId: "gone"),
+            JQLPreset(id: "ok", name: "OK", jql: "x", accountId: "a"),
+        ]
+        c.activePresetId = "stale"
+        #expect(c.activePreset?.id == "ok")
+    }
+
     @Test func movingPresetsReordersOnlyWithinTheAccount() {
         var c = AppConfig()
         c.presets = [

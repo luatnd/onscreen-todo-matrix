@@ -129,6 +129,9 @@ public final class AppModel: ObservableObject {
     /// Sign-in (401/403) or Keychain error for this account.
     public func hasError(accountId: String) -> Bool { accountErrors.contains(accountId) }
 
+    /// Keychain read failed for this account (not a Jira sign-in problem).
+    public func hasTokenError(accountId: String) -> Bool { tokenErrorAccounts.contains(accountId) }
+
     /// "default" for the first account (so the pre-filled "My open work" preset belongs to it), a UUID afterwards.
     public func newAccountId() -> String {
         config.account(id: JiraAccount.defaultId) == nil ? JiraAccount.defaultId : UUID().uuidString
@@ -234,7 +237,7 @@ public final class AppModel: ObservableObject {
         isRefreshing = true
         let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
         if await fetch(api, preset: preset, previous: previous) {
-            await backfillFieldNames(api, accountId: preset.accountId, previous: previous)
+            await backfillFieldNames(api, preset: preset, previous: previous)
         }
         isRefreshing = false
         if rerunRequested {
@@ -244,7 +247,8 @@ public final class AppModel: ObservableObject {
     }
 
     /// Once per account per run: saves display names for mapped axes that have none (labels fall back to ids on failure).
-    private func backfillFieldNames(_ api: JiraAPI, accountId: String, previous: [String: MappedTask]) async {
+    private func backfillFieldNames(_ api: JiraAPI, preset: JQLPreset, previous: [String: MappedTask]) async {
+        let accountId = preset.accountId
         let missing = { (a: JiraAccount) in Axis.allCases.contains { a.axes[$0].mapping != nil && a.axes[$0].fieldName == nil } }
         guard !fieldNamesTried.contains(accountId), let account = config.account(id: accountId), missing(account) else { return }
         fieldNamesTried.insert(accountId)
@@ -255,7 +259,7 @@ public final class AppModel: ObservableObject {
         guard c != config else { return }
         config = c
         saveConfig(c)
-        rebuild(previous: previous)
+        rebuild(previous: isActive(preset) ? previous : nil)
     }
 
     @discardableResult

@@ -102,6 +102,7 @@ struct AccountsTab: View {
     }
 
     private func statusLine(_ account: JiraAccount) -> String {
+        if model.hasTokenError(accountId: account.id) { return "Keychain access denied" }
         if model.hasError(accountId: account.id) { return "Jira sign-in failed" }
         if let s = status[account.id] { return s }
         return model.hasCredentials(account) ? "" : "Not connected"

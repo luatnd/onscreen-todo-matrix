@@ -166,7 +166,8 @@ public struct AppConfig: Codable, Equatable, Sendable {
     }
 
     public var activePreset: JQLPreset? {
-        presets.first { $0.id == activePresetId } ?? presets.first
+        presets.first { $0.id == activePresetId }
+            ?? menuOrderedPresets.first { account(id: $0.accountId) != nil } ?? presets.first
     }
 
     public func account(id: String?) -> JiraAccount? {

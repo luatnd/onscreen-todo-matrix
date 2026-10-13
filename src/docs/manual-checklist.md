@@ -23,6 +23,8 @@ Run after `./scripts/build-app.sh` and `open "build/Glance.app"`.
 
 ## v1.2.0 — multiple Jira accounts
 
+Quit any running Glance (v1.1) before the first v1.2 launch; install over /Applications/Glance.app (don't run v1.2 from build/ while v1.1 is installed with launch at login). macOS asks once for Keychain access to the old token — click Always Allow. Downgrading to v1.1 is not supported; to roll back, quit Glance, restore config.v1.json as config.json and re-enter the API token.
+
 Before the first launch of a v1.2 build: `cp -R ~/Library/Application\ Support/onscreen-todo-matrix ~/onscreen-todo-matrix-backup-v1.1`.
 
 - [ ] Upgrade from v1.1: the panel shows the same issues and preset as before, without opening Settings; `config.json` now has `accounts` with `"id" : "default"`, `"name" : "Personal"` and no top-level `site`/`email`/`axes`; `config.v1.json` exists next to it; `cache/my-open-work.json` exists and `last-fetch.json` is gone.
