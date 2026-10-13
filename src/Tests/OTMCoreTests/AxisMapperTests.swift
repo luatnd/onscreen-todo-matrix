@@ -220,3 +220,186 @@ private func norm(_ raw: JSONValue?, _ m: AxisMapping, range: ClosedRange<Double
         #expect(DefaultMappings.mapping(for: JiraField(id: "u", name: "U", custom: false, schemaType: "user")) == nil)
     }
 }
+
+// MARK: - Effort fallback (D21): logged time, then the Start → Due timeline window
+
+@Suite struct WorkingDaysTests {
+    private func d(_ day: Int) -> Date { utc.date(from: DateComponents(year: 2026, month: 10, day: day))! }
+
+    @Test func countsMondayToFridayInclusive() {
+        // Thu 1 Oct … Sat 10 Oct 2026: Thu, Fri, Mon, Tue, Wed, Thu, Fri
+        #expect(AxisMapper.workingDays(from: d(1), to: d(10), calendar: utc) == 7)
+    }
+
+    @Test func sameDayIsOne() {
+        #expect(AxisMapper.workingDays(from: d(7), to: d(7), calendar: utc) == 1)
+    }
+
+    @Test func weekendOnlyWindowIsAtLeastOne() {
+        // Sat 3 Oct → Sun 4 Oct
+        #expect(AxisMapper.workingDays(from: d(3), to: d(4), calendar: utc) == 1)
+    }
+
+    @Test func endBeforeStartIsNil() {
+        #expect(AxisMapper.workingDays(from: d(10), to: d(1), calendar: utc) == nil)
+    }
+}
+
+@Suite struct EffortFallbackTests {
+    let hour = 3600.0
+    func axes(unit: EffortUnit = .hours) -> AxesConfig {
+        var a = AxesConfig()
+        a.value = AxisConfig(mapping: .number(fieldId: "cf_value", min: 0, max: 10, invert: false))
+        a.effort = AxisConfig(mapping: .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false),
+                              missingDefault: 0.3,
+                              timeline: TimelineFallback(startFieldId: "cf_start", endFieldId: "duedate", unit: unit))
+        a.urgency = AxisConfig(mapping: .option(fieldId: "priority", levels: DefaultMappings.priorityLevels))
+        return a
+    }
+    func issue(_ key: String, _ f: [String: JSONValue]) -> JiraIssue {
+        JiraIssue(key: key, fields: ["summary": .string(key)].merging(f) { a, _ in a })
+    }
+    func run(_ issues: [JiraIssue], unit: EffortUnit = .hours) -> [String: MappedTask] {
+        Dictionary(uniqueKeysWithValues: AxisMapper.map(issues: issues, axes: axes(unit: unit), site: site, now: now, calendar: utc)
+            .map { ($0.key, $0) })
+    }
+    // Real estimates 8 h and 40 h define the auto range.
+    var estimates: [JiraIssue] {
+        [issue("LO", ["timeoriginalestimate": .number(8 * hour)]), issue("HI", ["timeoriginalestimate": .number(40 * hour)])]
+    }
+
+    @Test func realEstimateIsNeverDerived() {
+        let t = run(estimates)["HI"]!
+        #expect(t.effort == 1)
+        #expect(t.derived == nil)
+        #expect(!t.missing.effort)
+    }
+
+    @Test func windowBecomesWorkingDaysTimesEightHours() {
+        // Mon 5 → Wed 7 Oct = 3 working days = 24 h → (24 − 8) / (40 − 8) = 0.5
+        let w = issue("W", ["cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])
+        let t = run(estimates + [w])["W"]!
+        #expect(t.effort == 0.5)
+        #expect(!t.missing.effort)
+        #expect(t.derived == DerivedEffort(kind: .timeline, amount: 24, unit: "h", from: "2026-10-05", to: "2026-10-07", clamped: false))
+    }
+
+    @Test func daysUnitOnlyChangesTheDisplayedAmount() {
+        let w = issue("W", ["cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])
+        let t = run(estimates + [w], unit: .days)["W"]!
+        #expect(t.effort == 0.5)
+        #expect(t.derived?.amount == 3)
+        #expect(t.derived?.unit == "d")
+    }
+
+    @Test func windowAboveRealRangeIsClampedAndFlagged() {
+        // 7 working days = 56 h > 40 h max
+        let w = issue("W", ["cf_start": .string("2026-10-01"), "duedate": .string("2026-10-10")])
+        let t = run(estimates + [w])["W"]!
+        #expect(t.effort == 1)
+        #expect(t.derived?.amount == 56)
+        #expect(t.derived?.clamped == true)
+    }
+
+    @Test func datetimeStartAndDueUseTheCalendarDate() {
+        let w = issue("W", ["cf_start": .string("2026-10-05T23:30:00.000-0700"), "duedate": .string("2026-10-07")])
+        #expect(run(estimates + [w])["W"]!.derived?.amount == 24)
+    }
+
+    @Test func missingStartOrBadWindowStaysMissing() {
+        let noStart = issue("N", ["duedate": .string("2026-10-07")])
+        let backwards = issue("B", ["cf_start": .string("2026-10-09"), "duedate": .string("2026-10-07")])
+        let out = run(estimates + [noStart, backwards])
+        for k in ["N", "B"] {
+            #expect(out[k]!.missing.effort)
+            #expect(out[k]!.effort == 0.3)
+            #expect(out[k]!.derived == nil)
+        }
+    }
+
+    @Test func epicsAreNotDerivedFromTheirWindow() {
+        let e = issue("E", ["issuetype": .object(["name": .string("Epic")]),
+                            "cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])
+        let t = run(estimates + [e])["E"]!
+        #expect(t.missing.effort)
+        #expect(t.derived == nil)
+    }
+
+    @Test func loggedTimeComesBeforeTheWindow() {
+        // 2 h spent + 3 h remaining = 5 h (below the 8 h min → clamped to 0, but flagged as logged)
+        let l = issue("L", ["timespent": .number(2 * hour), "timeestimate": .number(3 * hour),
+                            "cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])
+        let t = run(estimates + [l])["L"]!
+        #expect(t.derived?.kind == .logged)
+        #expect(t.derived?.amount == 5)
+        #expect(t.derived?.from == nil)
+        #expect(!t.missing.effort)
+    }
+
+    @Test func zeroLoggedTimeFallsThroughToTheWindow() {
+        let l = issue("L", ["timespent": .number(0), "timeestimate": .null,
+                            "cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])
+        #expect(run(estimates + [l])["L"]!.derived?.kind == .timeline)
+    }
+
+    @Test func fewerThanTwoRealEstimatesLetDerivedValuesJoinTheRange() {
+        // one real estimate (16 h) → degenerate range; derived 8 h and 24 h widen it to 8…24
+        let real = issue("R", ["timeoriginalestimate": .number(16 * hour)])
+        let a = issue("A", ["cf_start": .string("2026-10-05"), "duedate": .string("2026-10-05")])  // 1 d = 8 h
+        let b = issue("B", ["cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])  // 3 d = 24 h
+        let out = run([real, a, b])
+        #expect(out["A"]!.effort == 0)
+        #expect(out["B"]!.effort == 1)
+        #expect(out["R"]!.effort == 0.5)
+        #expect(out["B"]!.derived?.clamped == false)
+    }
+
+    @Test func toggleOffKeepsOldBehaviour() {
+        var a = axes()
+        a.effort.timeline = nil
+        let w = issue("W", ["cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])
+        let t = AxisMapper.map(issues: estimates + [w], axes: a, site: site, now: now, calendar: utc).first { $0.key == "W" }!
+        #expect(t.missing.effort)
+        #expect(t.derived == nil)
+    }
+
+    @Test func fallbackAppliesOnlyToOriginalEstimateMapping() {
+        var a = axes()
+        a.effort.mapping = .number(fieldId: "cf_sp", min: nil, max: nil, invert: false)
+        let w = issue("W", ["cf_start": .string("2026-10-05"), "duedate": .string("2026-10-07")])
+        let t = AxisMapper.map(issues: [w], axes: a, site: site, now: now, calendar: utc)[0]
+        #expect(t.missing.effort)
+        #expect(t.derived == nil)
+    }
+}
+
+@Suite struct TimelineSuggestionTests {
+    let fields = [
+        JiraField(id: "timeoriginalestimate", name: "Original estimate", custom: false, schemaType: "number"),
+        JiraField(id: "duedate", name: "Due date", custom: false, schemaType: "date"),
+        JiraField(id: "customfield_10015", name: "Start date", custom: true, schemaType: "date"),
+        JiraField(id: "customfield_10016", name: "Target start", custom: true, schemaType: "date"),
+    ]
+
+    @Test func freshSetupEnablesTimelineWithTheStartDateField() {
+        let a = DefaultMappings.suggest(fields: fields, current: AxesConfig())
+        #expect(a.effort.mapping == .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false))
+        #expect(a.effort.timeline == TimelineFallback(startFieldId: "customfield_10015", endFieldId: "duedate", unit: .hours))
+    }
+
+    @Test func noStartDateFieldLeavesTimelineOff() {
+        let a = DefaultMappings.suggest(fields: Array(fields.prefix(2)), current: AxesConfig())
+        #expect(a.effort.timeline == nil)
+    }
+
+    @Test func existingEffortMappingIsNeverTouched() {
+        var cur = AxesConfig()
+        cur.effort.mapping = .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false)
+        #expect(DefaultMappings.suggest(fields: fields, current: cur).effort.timeline == nil)
+    }
+
+    @Test func timelineStartFieldsListsDateFieldsOnly() {
+        #expect(DefaultMappings.timelineDateFields(fields).map(\.id) == ["duedate", "customfield_10015", "customfield_10016"])
+        #expect(DefaultMappings.guessStartField(fields)?.id == "customfield_10015")
+    }
+}

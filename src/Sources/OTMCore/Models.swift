@@ -73,12 +73,52 @@ public enum AxisMapping: Codable, Equatable, Sendable {
     }
 }
 
+/// How derived effort is displayed (D21): hours or days. 1 day = 8 h (Jira's default).
+public enum EffortUnit: String, Codable, CaseIterable, Sendable {
+    case hours, days
+}
+
+/// Effort fallback (D21), used only when Effort is mapped to Original estimate and the issue has none:
+/// logged time first, then the working days between a start field and an end field.
+/// Absent in older configs (decodes as nil = off).
+public struct TimelineFallback: Codable, Equatable, Sendable {
+    public var startFieldId: String
+    public var endFieldId: String
+    public var unit: EffortUnit
+    public init(startFieldId: String, endFieldId: String = "duedate", unit: EffortUnit = .hours) {
+        self.startFieldId = startFieldId
+        self.endFieldId = endFieldId
+        self.unit = unit
+    }
+}
+
+/// Where an issue's effort came from when it is not its own Original estimate. `unit` is "h" or "d".
+public struct DerivedEffort: Codable, Equatable, Sendable {
+    public enum Kind: String, Codable, Sendable { case timeline, logged }
+    public var kind: Kind
+    public var amount: Double
+    public var unit: String
+    public var from: String?
+    public var to: String?
+    public var clamped: Bool
+    public init(kind: Kind, amount: Double, unit: String, from: String? = nil, to: String? = nil, clamped: Bool = false) {
+        self.kind = kind
+        self.amount = amount
+        self.unit = unit
+        self.from = from
+        self.to = to
+        self.clamped = clamped
+    }
+}
+
 public struct AxisConfig: Codable, Equatable, Sendable {
     public var mapping: AxisMapping?
     public var missingDefault: Double
-    public init(mapping: AxisMapping? = nil, missingDefault: Double = 0.5) {
+    public var timeline: TimelineFallback?
+    public init(mapping: AxisMapping? = nil, missingDefault: Double = 0.5, timeline: TimelineFallback? = nil) {
         self.mapping = mapping
         self.missingDefault = missingDefault
+        self.timeline = timeline
     }
 }
 
@@ -140,9 +180,11 @@ public struct MappedTask: Codable, Equatable, Sendable {
     public var effort: Double
     public var urgency: Double
     public var missing: MissingFlags
+    public var derived: DerivedEffort?
 
     public init(key: String, summary: String, status: String, priority: String?, due: String?, url: String,
-                value: Double, effort: Double, urgency: Double, missing: MissingFlags = MissingFlags()) {
+                value: Double, effort: Double, urgency: Double, missing: MissingFlags = MissingFlags(),
+                derived: DerivedEffort? = nil) {
         self.key = key
         self.summary = summary
         self.status = status
@@ -153,5 +195,6 @@ public struct MappedTask: Codable, Equatable, Sendable {
         self.effort = effort
         self.urgency = urgency
         self.missing = missing
+        self.derived = derived
     }
 }

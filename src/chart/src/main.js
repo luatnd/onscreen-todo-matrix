@@ -4,6 +4,7 @@ import { drawScene } from './render.js';
 import { chooseCardCorner } from './labels.js';
 import { validateState } from './state.js';
 import { stackKey, byScoreThenKey } from './stacks.js';
+import { describeDerived, tipSuffix } from './derived.js';
 import sample from '../../fixtures/render-state.json';
 
 const $ = (id) => document.getElementById(id);
@@ -158,6 +159,7 @@ function select(key, redraw = true) {
   card.innerHTML = `<div class="k">${escapeHTML(t.key)} · ${escapeHTML(t.status || '')}</div><b>${escapeHTML(t.summary)}</b>
     <div class="row" style="margin-top:4px"><span>Value <b>${f(t.value)}</b></span><span>Ease <b>${f(1 - t.effort)}</b></span><span>Urgency <b>${f(t.urgency)}</b></span></div>
     <div class="row"><span>Priority <b>${escapeHTML(t.priority || '—')}</b></span><span>Due <b>${escapeHTML(t.due || '—')}</b></span>${t.rank ? `<span style="color:#f4c542">#${t.rank} next</span>` : ''}</div>
+    ${t.derived ? `<div class="row"><span>${escapeHTML(describeDerived(t.derived))}</span></div>` : ''}
     ${stackRow(t)}<span class="open" id="openBtn">⌘O Open in Jira ↗</span>`;
   card.style.display = 'block';
   $('openBtn').onclick = openIssue;
@@ -341,7 +343,7 @@ cv.addEventListener('mousemove', (e) => {
   if (m && (m.lit.length > 1 || m.lit[0].key !== st.sel)) {
     tip.style.display = 'block'; tip.style.left = `${m.p.x + 12}px`; tip.style.top = `${m.p.y + 10}px`;
     // tip.textContent = `${m.t.key} · ${m.t.summary}`; cv.style.cursor = 'pointer';
-    const rows = m.lit.slice(0, 5).map((t) => `<div>${t.rank ? `<b class="rk">${t.rank}</b> ` : ''}${escapeHTML(`${t.key} · ${t.summary}`)}</div>`);
+    const rows = m.lit.slice(0, 5).map((t) => `<div>${t.rank ? `<b class="rk">${t.rank}</b> ` : ''}${escapeHTML(`${t.key} · ${t.summary}${tipSuffix(t)}`)}</div>`);
     if (m.lit.length > 5) rows.push(`<div class="more">+${m.lit.length - 5} more</div>`);
     tip.innerHTML = rows.join(''); cv.style.cursor = 'pointer';
   } else { tip.style.display = 'none'; cv.style.cursor = 'grab'; }

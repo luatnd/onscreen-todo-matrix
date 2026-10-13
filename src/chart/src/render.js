@@ -124,6 +124,10 @@ export function drawScene(g, o) {
       g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1; g.stroke();
     }
     // const pt = o.pulses.get(t.key);
+    if (m.stack.some((x) => x.derived)) { // effort estimated from the timeline / logged time (D21): dashed ring
+      g.strokeStyle = 'rgba(232,236,244,.75)'; g.lineWidth = 1.2; g.setLineDash([2.5, 2.5]);
+      g.beginPath(); g.arc(m.p.x, m.p.y, r + 3, 0, 7); g.stroke(); g.setLineDash([]);
+    }
     const pt = m.stack.reduce((a, x) => (o.pulses.has(x.key) ? Math.max(a ?? -Infinity, o.pulses.get(x.key)) : a), null);
     if (pt != null) {
       const k = (o.now - pt) / 1600;

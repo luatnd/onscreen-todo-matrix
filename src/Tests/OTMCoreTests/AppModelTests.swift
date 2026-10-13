@@ -56,6 +56,17 @@ import Testing
         #expect(IssueCache(directory: dir).load()?.issues.count == 1)
     }
 
+    @Test func timelineFallbackAddsItsFieldsToTheFetch() async {
+        var c = configuredConfig()
+        c.axes.effort.mapping = .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false)
+        c.axes.effort.timeline = TimelineFallback(startFieldId: "cf_start", endFieldId: "duedate", unit: .hours)
+        api.searchResult = .success(SearchResult(issues: []))
+        let m = makeModel(config: c)
+        await m.refresh(.manual)
+        #expect(api.searchCalls[0].fields == ["summary", "status", "priority", "duedate", "cf_value", "timeoriginalestimate",
+                                              "cf_start", "timespent", "timeestimate", "issuetype"])
+    }
+
     @Test func secondRefreshFlagsChangedTasks() async {
         api.searchResult = .success(SearchResult(issues: [issue("A-1", value: 2, sp: 2, priority: "Low"),
                                                           issue("B-1", value: 5, sp: 5, priority: "Low")]))

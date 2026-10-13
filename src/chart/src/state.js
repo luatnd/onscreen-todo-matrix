@@ -12,6 +12,15 @@ export function validateState(s) {
     for (const k of ['value', 'effort', 'urgency']) if (!unit(t[k])) e.push(`tasks[${i}].${k} must be a number in 0..1`);
     if (!isObj(t.missing)) e.push(`tasks[${i}].missing must be an object`);
     if (typeof t.score !== 'number') e.push(`tasks[${i}].score must be a number`);
+    if (t.derived != null) {
+      const d = t.derived;
+      if (!isObj(d)) e.push(`tasks[${i}].derived must be an object`);
+      else {
+        if (d.kind !== 'timeline' && d.kind !== 'logged') e.push(`tasks[${i}].derived.kind must be timeline or logged`);
+        if (typeof d.amount !== 'number' || !Number.isFinite(d.amount)) e.push(`tasks[${i}].derived.amount must be a number`);
+        if (d.unit !== 'h' && d.unit !== 'd') e.push(`tasks[${i}].derived.unit must be h or d`);
+      }
+    }
   });
   if (!isObj(s.view)) e.push('view missing');
   else for (const k of ['yaw', 'pitch', 'zoom']) if (typeof s.view[k] !== 'number') e.push(`view.${k} must be a number`);

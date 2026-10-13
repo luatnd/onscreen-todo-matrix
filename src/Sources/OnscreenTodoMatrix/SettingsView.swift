@@ -201,6 +201,7 @@ struct AxisEditor: View {
                 }
             }
             if let mapping = cfg.mapping { editor(for: mapping) }
+            if axis == .effort, cfg.mapping?.fieldId == "timeoriginalestimate" { timelineEditor }
             HStack {
                 Text("Missing value position")
                 Slider(value: Binding(get: { cfg.missingDefault }, set: { v in update { $0.missingDefault = v } }), in: 0...1)
@@ -211,6 +212,41 @@ struct AxisEditor: View {
                 Text("Unmapped values (placed at the middle): \(unmapped.joined(separator: ", "))")
                     .font(.caption).foregroundStyle(.orange)
             }
+        }
+    }
+
+    /// D21: effort fallback for issues without an Original estimate (logged time, then Start → Due window).
+    @ViewBuilder
+    private var timelineEditor: some View {
+        let dateFields = DefaultMappings.timelineDateFields(vm.fields)
+        Toggle("If missing, estimate from timeline (Start → Due)", isOn: Binding(
+            get: { cfg.timeline != nil },
+            set: { on in update { $0.timeline = on ? TimelineFallback(startFieldId: DefaultMappings.guessStartField(vm.fields)?.id ?? "") : nil } }
+        ))
+        if let tl = cfg.timeline {
+            Picker("Start field", selection: Binding(
+                get: { tl.startFieldId },
+                set: { id in update { $0.timeline?.startFieldId = id } }
+            )) {
+                Text("— choose —").tag("")
+                ForEach(dateFields) { f in Text(f.name).tag(f.id) }
+            }
+            Picker("End field", selection: Binding(
+                get: { tl.endFieldId },
+                set: { id in update { $0.timeline?.endFieldId = id } }
+            )) {
+                ForEach(dateFields) { f in Text(f.name).tag(f.id) }
+            }
+            Picker("Effort unit", selection: Binding(
+                get: { tl.unit },
+                set: { u in update { $0.timeline?.unit = u } }
+            )) {
+                Text("Hours").tag(EffortUnit.hours)
+                Text("Days").tag(EffortUnit.days)
+            }
+            .pickerStyle(.segmented)
+            Text("Shown on the card as hours or days. Order: logged time (spent + remaining), then working days Mon–Fri × 8 h between Start and End (1 day = 8 h; holidays ignored; Epics skipped). A window is an upper bound.")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 

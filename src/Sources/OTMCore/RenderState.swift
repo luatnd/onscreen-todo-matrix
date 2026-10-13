@@ -11,6 +11,7 @@ public struct RenderTask: Codable, Equatable, Sendable {
     public var effort: Double
     public var urgency: Double
     public var missing: MissingFlags
+    public var derived: DerivedEffort?
     public var score: Double
     public var rank: Int?
     public var fire: Bool
@@ -59,7 +60,7 @@ public enum RenderStateBuilder {
             }
             return RenderTask(key: t.key, summary: t.summary, status: t.status, priority: t.priority, due: t.due,
                               url: t.url, value: t.value, effort: t.effort, urgency: t.urgency, missing: t.missing,
-                              score: s.score, rank: s.rank, fire: s.fire, changed: changed)
+                              derived: t.derived, score: s.score, rank: s.rank, fire: s.fire, changed: changed)
         }
         return RenderState(tasks: rendered, view: config.view, lastView: config.lastView, settings: config.quick, status: status,
                            presets: config.presets.map { RenderPreset(id: $0.id, name: $0.name) },

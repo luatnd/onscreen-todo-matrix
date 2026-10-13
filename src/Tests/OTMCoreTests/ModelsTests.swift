@@ -118,3 +118,29 @@ import Testing
         #expect(q.applying(key: "unknown", value: .null) == q)
     }
 }
+
+@Suite struct TimelineConfigTests {
+    @Test func configWithoutTimelineStillDecodes() throws {
+        let json = #"{"missingDefault":0.4,"mapping":{"number":{"fieldId":"timeoriginalestimate","invert":false}}}"#
+        let c = try JSONDecoder().decode(AxisConfig.self, from: Data(json.utf8))
+        #expect(c.timeline == nil)
+        #expect(c.missingDefault == 0.4)
+    }
+
+    @Test func timelineRoundTrips() throws {
+        let c = AxisConfig(mapping: .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false),
+                           timeline: TimelineFallback(startFieldId: "cf_start", endFieldId: "duedate", unit: .days))
+        let back = try JSONDecoder().decode(AxisConfig.self, from: JSONEncoder().encode(c))
+        #expect(back == c)
+        #expect(back.timeline?.unit == .days)
+    }
+
+    @Test func derivedEffortRoundTripsOnMappedTask() throws {
+        var t = MappedTask(key: "A-1", summary: "s", status: "", priority: nil, due: nil, url: "u", value: 0.5, effort: 0.5, urgency: 0.5)
+        t.derived = DerivedEffort(kind: .timeline, amount: 56, unit: "h", from: "2026-10-01", to: "2026-10-10", clamped: false)
+        let back = try JSONDecoder().decode(MappedTask.self, from: JSONEncoder().encode(t))
+        #expect(back == t)
+        let old = try JSONDecoder().decode(MappedTask.self, from: Data(#"{"key":"A","summary":"s","status":"","url":"u","value":0,"effort":0,"urgency":0,"missing":{"value":false,"effort":false,"urgency":false}}"#.utf8))
+        #expect(old.derived == nil)
+    }
+}

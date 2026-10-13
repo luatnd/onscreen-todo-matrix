@@ -9,6 +9,7 @@
       "due": null, "url": "https://acme.atlassian.net/browse/PAY-412",
       "value": 0.92, "effort": 0.2, "urgency": 0.95,
       "missing": { "value": false, "effort": false, "urgency": false },
+      "derived": { "kind": "timeline", "amount": 56, "unit": "h", "from": "2026-10-01", "to": "2026-10-10", "clamped": false },
       "score": 2.668, "rank": 2, "fire": true, "changed": true },
     { "key": "DATA-19", "summary": "Rebuild data warehouse on ClickHouse", "status": "Backlog", "priority": null,
       "due": null, "url": "https://acme.atlassian.net/browse/DATA-19",

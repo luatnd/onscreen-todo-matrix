@@ -72,6 +72,60 @@ public enum AxisMapper {
         }
     }
 
+    // MARK: Effort fallback (D21)
+
+    /// 1 working day = 8 h (Jira's default; the site's own hours/day cannot be read through the read-only API).
+    static let workdaySeconds: Double = 8 * 3600
+
+    /// Mon–Fri days between two dates, both ends included, at least 1; nil when `to` is before `from`.
+    public static func workingDays(from: Date, to: Date, calendar: Calendar) -> Int? {
+        let a = calendar.startOfDay(for: from), b = calendar.startOfDay(for: to)
+        guard b >= a, let span = calendar.dateComponents([.day], from: a, to: b).day else { return nil }
+        let total = span + 1
+        var n = (total / 7) * 5
+        // the remaining 0…6 days start on the same weekday as `a`
+        for i in 0..<(total % 7) {
+            guard let d = calendar.date(byAdding: .day, value: i, to: a) else { break }
+            let wd = calendar.component(.weekday, from: d)   // 1 = Sunday … 7 = Saturday
+            if wd != 1 && wd != 7 { n += 1 }
+        }
+        return max(1, n)
+    }
+
+    /// The fallback config when it applies: Effort is mapped to Original estimate and the toggle is on.
+    public static func timelineFallback(for effort: AxisConfig) -> TimelineFallback? {
+        guard let tl = effort.timeline, case .number(let id, _, _, _)? = effort.mapping, id == "timeoriginalestimate" else { return nil }
+        return tl
+    }
+
+    /// Extra Jira fields to request for the fallback.
+    public static func timelineFieldIds(for effort: AxisConfig) -> [String] {
+        guard let tl = timelineFallback(for: effort) else { return [] }
+        return [tl.startFieldId, tl.endFieldId, "timespent", "timeestimate", "issuetype"].filter { !$0.isEmpty }
+    }
+
+    struct DerivedSeconds {
+        var seconds: Double
+        var kind: DerivedEffort.Kind
+        var from: String?
+        var to: String?
+    }
+
+    /// Logged time (spent + remaining) when > 0, else the Start → End window in working days × 8 h.
+    /// Epics are skipped for the window (it covers their children). nil = no usable signal.
+    static func derivedSeconds(for issue: JiraIssue, timeline: TimelineFallback, calendar: Calendar) -> DerivedSeconds? {
+        let logged = (issue.fields["timespent"]?.numberValue ?? 0) + (issue.fields["timeestimate"]?.numberValue ?? 0)
+        if logged > 0 { return DerivedSeconds(seconds: logged, kind: .logged, from: nil, to: nil) }
+        if optionLabel(issue.fields["issuetype"]) == "Epic" { return nil }
+        guard !timeline.startFieldId.isEmpty,
+              let start = dateValue(issue.fields[timeline.startFieldId], calendar: calendar),
+              let end = dateValue(issue.fields[timeline.endFieldId], calendar: calendar),
+              let days = workingDays(from: start, to: end, calendar: calendar) else { return nil }
+        return DerivedSeconds(seconds: Double(days) * workdaySeconds, kind: .timeline,
+                              from: issue.fields[timeline.startFieldId]?.stringValue.map { String($0.prefix(10)) },
+                              to: issue.fields[timeline.endFieldId]?.stringValue.map { String($0.prefix(10)) })
+    }
+
     public static func observedLabels(fieldId: String, issues: [JiraIssue]) -> [String] {
         Array(Set(issues.compactMap { optionLabel($0.fields[fieldId]) })).sorted()
     }
@@ -87,13 +141,36 @@ public enum AxisMapper {
         for axis in Axis.allCases {
             if case .number(let id, _, _, _)? = axes[axis].mapping { ranges[axis] = autoRange(fieldId: id, issues: issues) }
         }
+        // Effort fallback (D21): issues with no Original estimate but logged time or a start/end window.
+        var derived: [String: DerivedSeconds] = [:]
+        if let tl = timelineFallback(for: axes.effort), case .number(let id, _, _, _)? = axes.effort.mapping {
+            for issue in issues where issue.fields[id]?.numberValue == nil {
+                if let d = derivedSeconds(for: issue, timeline: tl, calendar: calendar) { derived[issue.key] = d }
+            }
+            // The range comes from real estimates only; with fewer than 2 distinct ones derived values join it.
+            let real = ranges[.effort]
+            if !derived.isEmpty, real == nil || real!.lowerBound == real!.upperBound {
+                let all = issues.compactMap { $0.fields[id]?.numberValue } + derived.values.map(\.seconds)
+                if let lo = all.min(), let hi = all.max() { ranges[.effort] = lo...hi }
+            }
+        }
         return issues.map { issue in
             var values: [Axis: Double] = [:]
             var missing = MissingFlags()
+            var derivedEffort: DerivedEffort?
             for axis in Axis.allCases {
                 let cfg = axes[axis]
-                let n = cfg.mapping.flatMap {
+                var n = cfg.mapping.flatMap {
                     normalize(issue.fields[$0.fieldId], mapping: $0, autoRange: ranges[axis], now: now, calendar: calendar)
+                }
+                if n == nil, axis == .effort, let d = derived[issue.key], let mapping = cfg.mapping, let tl = cfg.timeline {
+                    n = normalize(.number(d.seconds), mapping: mapping, autoRange: ranges[axis], now: now, calendar: calendar)
+                    var top = ranges[axis]?.upperBound
+                    if case .number(_, _, let fixedMax?, _) = mapping { top = fixedMax }
+                    let days = tl.unit == .days
+                    derivedEffort = DerivedEffort(kind: d.kind, amount: days ? d.seconds / workdaySeconds : d.seconds / 3600,
+                                                  unit: days ? "d" : "h", from: d.from, to: d.to,
+                                                  clamped: top.map { d.seconds > $0 } ?? false)
                 }
                 values[axis] = n ?? cfg.missingDefault
                 missing[axis] = n == nil
@@ -106,7 +183,7 @@ public enum AxisMapper {
                 due: issue.fields["duedate"]?.stringValue,
                 url: site.appendingPathComponent("browse").appendingPathComponent(issue.key).absoluteString,
                 value: values[.value]!, effort: values[.effort]!, urgency: values[.urgency]!,
-                missing: missing
+                missing: missing, derived: derivedEffort
             )
         }
     }
@@ -114,6 +191,16 @@ public enum AxisMapper {
 
 public enum DefaultMappings {
     public static let priorityLevels: [String: Double] = ["Highest": 5, "High": 3.75, "Medium": 2.5, "Low": 1.25, "Lowest": 0]
+
+    /// Date fields offered as Start / End for the effort timeline fallback (input order).
+    public static func timelineDateFields(_ fields: [JiraField]) -> [JiraField] {
+        fields.filter { FieldClassifier.kind(of: $0) == .date }
+    }
+
+    /// The site's custom "Start date" field, if any (exact name; "Target start" etc. are left to the user).
+    public static func guessStartField(_ fields: [JiraField]) -> JiraField? {
+        fields.first { $0.custom && FieldClassifier.kind(of: $0) == .date && $0.name.lowercased() == "start date" }
+    }
 
     public static func mapping(for field: JiraField) -> AxisMapping? {
         switch FieldClassifier.kind(of: field) {
@@ -136,6 +223,8 @@ public enum DefaultMappings {
                 a.effort.mapping = .number(fieldId: sp.id, min: nil, max: nil, invert: false)
             } else if fields.contains(where: { $0.id == "timeoriginalestimate" }) {
                 a.effort.mapping = .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false)
+                // D21: fresh setups get the timeline fallback when the site has a "Start date" field.
+                if let start = guessStartField(fields) { a.effort.timeline = TimelineFallback(startFieldId: start.id) }
             }
         }
         return a

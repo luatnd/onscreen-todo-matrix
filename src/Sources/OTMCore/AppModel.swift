@@ -182,6 +182,8 @@ public final class AppModel: ObservableObject {
         for axis in Axis.allCases {
             if let id = config.axes[axis].mapping?.fieldId, !out.contains(id) { out.append(id) }
         }
+        // D21: effort fallback fields (start / end / logged time / issue type)
+        for id in AxisMapper.timelineFieldIds(for: config.axes.effort) where !out.contains(id) { out.append(id) }
         return out
     }
 

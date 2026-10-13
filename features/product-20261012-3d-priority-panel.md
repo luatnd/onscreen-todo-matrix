@@ -19,6 +19,9 @@ Press one key and a small panel floats over whatever you're doing, showing every
 - **Color tells priority:** each task's color mixes red (urgency), green (ease) and blue (value). White means urgent, valuable and easy: do it now. Dark means not worth it.
 - **Top 3 "do next"** tasks get gold numbered badges; **on-fire** tasks glow red.
 - **Task titles** appear next to the dots, with the most important ones always labeled.
+- **Nothing hides behind another task:** tasks at exactly the same spot become one stacked dot with a count; its label lists the titles, and one click per task steps through them.
+- **Axes show their direction:** each axis ends in a cone pointing away from the origin.
+- **No estimate? Use the timeline:** when a task has no Original estimate, Effort comes from logged time, or from the working days between its Start date and Due date (shown in hours or days). Those dots carry a dashed ring and the card says where the number came from.
 - **Your Jira, your rules:** pick which Jira field drives each axis (for example Priority → urgency, Story Points → effort) and what each value means.
 - **Edit in Jira, see it move:** open a task in Jira with ⌘O, change it, come back, and the dot glides to its new place.
 
