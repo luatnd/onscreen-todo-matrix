@@ -215,6 +215,33 @@ import Testing
         #expect(try Data(contentsOf: store.url) == original)
     }
 
+    func unbackedModel(_ store: ConfigStore) throws -> AppModel {
+        try FileManager.default.createSymbolicLink(at: store.legacyBackupURL, withDestinationURL: dir.appendingPathComponent("nowhere/x"))
+        return AppModel(configStore: store, cache: IssueCache(directory: dir), tokenStore: InMemoryTokenStore(legacyToken: "t"),
+                        scheduler: RefreshScheduler(), makeClient: { _, _, _ in FakeJiraAPI() })
+    }
+
+    @Test func unbackedV11RetriesBackupAndThenSaves() throws {
+        let store = try legacyStore()
+        let original = try Data(contentsOf: store.url)
+        let m = try unbackedModel(store)
+        #expect(m.migrationFailed)
+        try FileManager.default.removeItem(at: store.legacyBackupURL) // backup path becomes writable
+        m.setQuickSetting(key: "labelMode", value: .string("key"))
+        #expect(try Data(contentsOf: store.legacyBackupURL) == original)
+        guard case .loaded(let saved) = store.load() else { Issue.record("not saved"); return }
+        #expect(saved.quick.labelMode == "key")
+    }
+
+    @Test func saveAccountWhileBackupStillFailsKeepsBannerAndFile() throws {
+        let store = try legacyStore()
+        let original = try Data(contentsOf: store.url)
+        let m = try unbackedModel(store)
+        try m.saveAccount(JiraAccount(id: "default", name: "Personal", site: "acme.atlassian.net", email: "me@x.com"), token: "n")
+        #expect(m.renderState.status.banner == AppModel.migrationBanner)
+        #expect(try Data(contentsOf: store.url) == original)
+    }
+
     @Test func appModelReportsMigrationFailure() throws {
         _ = try legacyStore()
         let tokens = InMemoryTokenStore(legacyToken: "legacy-tok")

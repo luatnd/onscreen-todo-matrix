@@ -392,7 +392,14 @@ public final class AppModel: ObservableObject {
 
     /// Never overwrite a v1.1 config.json whose backup could not be made: keep changes in memory only.
     private func saveConfig(_ c: AppConfig) {
-        if protectUnbackedLegacyFile { return }
+        if protectUnbackedLegacyFile {
+            // Retry the backup (never overwriting an existing one); only then may the v1.1 file be replaced.
+            let fm = FileManager.default
+            if fm.fileExists(atPath: configStore.legacyBackupURL.path)
+                || (try? fm.copyItem(at: configStore.url, to: configStore.legacyBackupURL)) != nil {
+                protectUnbackedLegacyFile = false
+            } else { return }
+        }
         try? configStore.save(c)
     }
 
@@ -443,7 +450,7 @@ public final class AppModel: ObservableObject {
         let status: RenderStatus
         if let banner {
             status = RenderStatus(syncedAt: syncedAt, banner: banner, truncated: truncated, bannerTab: bannerTab)
-        } else if migrationFailed {
+        } else if migrationFailed || protectUnbackedLegacyFile {
             status = RenderStatus(syncedAt: syncedAt, banner: Self.migrationBanner, truncated: truncated, bannerTab: "accounts")
         } else {
             status = RenderStatus(syncedAt: syncedAt, banner: axisBanner, truncated: truncated,
