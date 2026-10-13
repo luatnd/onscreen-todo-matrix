@@ -44,7 +44,7 @@ public final class AppModel: ObservableObject {
         case .corrupt: config = AppConfig(); configWasCorrupt = true
         }
         for account in config.accounts { loadToken(account.id) }
-        if let cached = cache.load() {
+        if let preset = config.activePreset, let cached = cache.load(presetId: preset.id), cached.accountId == preset.accountId {
             issues = cached.issues
             syncedAt = cached.fetchedAt
         }
@@ -106,7 +106,7 @@ public final class AppModel: ObservableObject {
             truncated = result.truncated
                 ? "Showing \(result.issues.count) of \(result.approximateTotal.map(String.init) ?? "\(result.issues.count)+") · narrow your JQL"
                 : nil
-            try? cache.save(CachedFetch(issues: result.issues, fetchedAt: fetchedAt))
+            try? cache.save(CachedFetch(issues: result.issues, fetchedAt: fetchedAt, accountId: preset.accountId), presetId: preset.id)
             rebuild(previous: previous)
         } catch let error as JiraError {
             scheduler.recordFailure(error)

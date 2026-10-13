@@ -31,18 +31,61 @@ import Testing
 }
 
 @Suite struct IssueCacheTests {
+    let fetch = CachedFetch(issues: [JiraIssue(key: "SEC-5", fields: ["summary": .string("Rotate key")])],
+                            fetchedAt: Date(timeIntervalSince1970: 1_800_000_000), accountId: "default")
+
     @Test func emptyCacheLoadsNil() {
-        #expect(IssueCache(directory: makeTempDir()).load() == nil)
+        #expect(IssueCache(directory: makeTempDir()).load(presetId: "my-open-work") == nil)
     }
 
-    @Test func roundTripsIssuesAndTimestamp() throws {
+    @Test func roundTripsPerPreset() throws {
+        let dir = makeTempDir()
+        let cache = IssueCache(directory: dir)
+        var other = fetch
+        other.issues = []
+        other.accountId = "c1"
+        try cache.save(fetch, presetId: "my-open-work")
+        try cache.save(other, presetId: "p2")
+        #expect(cache.load(presetId: "my-open-work") == fetch)
+        #expect(cache.load(presetId: "p2") == other)
+        #expect(FileManager.default.fileExists(atPath: dir.appendingPathComponent("cache/my-open-work.json").path))
+        cache.delete(presetId: "p2")
+        #expect(cache.load(presetId: "p2") == nil)
+    }
+
+    @Test func presetIdCannotEscapeTheCacheFolder() throws {
+        // Review Focus #4
         let cache = IssueCache(directory: makeTempDir())
-        let fetch = CachedFetch(
-            issues: [JiraIssue(key: "SEC-5", fields: ["summary": .string("Rotate key")])],
-            fetchedAt: Date(timeIntervalSince1970: 1_800_000_000)
-        )
-        try cache.save(fetch)
-        #expect(cache.load() == fetch)
+        for id in ["../config", "a/b", "..", "x.json"] {
+            let url = cache.url(presetId: id)
+            #expect(url.deletingLastPathComponent().standardizedFileURL.path == cache.directory.standardizedFileURL.path)
+            #expect(!url.lastPathComponent.hasPrefix("."))
+        }
+        try cache.save(fetch, presetId: "../config")
+        #expect(cache.load(presetId: "../config") == fetch)
+    }
+
+    @Test func legacyFileMovesToActivePresetOnce() throws {
+        let dir = makeTempDir()
+        let cache = IssueCache(directory: dir)
+        try Data(#"{"issues":[{"key":"A-1","fields":{}}],"fetchedAt":"2026-10-13T06:46:00Z"}"#.utf8).write(to: cache.legacyURL)
+        cache.migrateLegacy(toPresetId: "my-open-work", accountId: "default")
+        let moved = cache.load(presetId: "my-open-work")
+        #expect(moved?.issues.map(\.key) == ["A-1"])
+        #expect(moved?.accountId == "default")
+        #expect(!FileManager.default.fileExists(atPath: cache.legacyURL.path))
+        cache.migrateLegacy(toPresetId: "my-open-work", accountId: "default") // no legacy file: no-op
+        #expect(cache.load(presetId: "my-open-work") == moved)
+    }
+
+    @Test func legacyMoveNeverOverwritesAnExistingPresetCache() throws {
+        let dir = makeTempDir()
+        let cache = IssueCache(directory: dir)
+        try cache.save(fetch, presetId: "my-open-work")
+        try Data(#"{"issues":[],"fetchedAt":"2026-10-13T06:46:00Z"}"#.utf8).write(to: cache.legacyURL)
+        cache.migrateLegacy(toPresetId: "my-open-work", accountId: "default")
+        #expect(cache.load(presetId: "my-open-work") == fetch)
+        #expect(FileManager.default.fileExists(atPath: cache.legacyURL.path))
     }
 }
 

@@ -53,7 +53,8 @@ import Testing
         #expect(m.renderState.status.syncedAt == clockNow)
         #expect(m.renderState.status.banner == nil)
         #expect(m.renderState.configured)
-        #expect(IssueCache(directory: dir).load()?.issues.count == 1)
+        #expect(IssueCache(directory: dir).load(presetId: "my-open-work")?.issues.count == 1)
+        #expect(IssueCache(directory: dir).load(presetId: "my-open-work")?.accountId == "default")
     }
 
     @Test func secondRefreshFlagsChangedTasks() async {
@@ -88,7 +89,8 @@ import Testing
         var cfg = configuredConfig()
         cfg.quick.refreshMinutes = 5
         try? IssueCache(directory: dir).save(CachedFetch(issues: [issue("A-1", value: 2, sp: 2, priority: "Low")],
-                                                         fetchedAt: clockNow.addingTimeInterval(-600)))
+                                                         fetchedAt: clockNow.addingTimeInterval(-600), accountId: "default"),
+                                             presetId: "my-open-work")
         let m = makeModel(config: cfg)
         #expect(m.renderState.tasks.count == 1)
         await m.refresh(.manual)
