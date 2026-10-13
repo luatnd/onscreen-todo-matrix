@@ -28,7 +28,7 @@ public enum AxisMapper {
         guard let raw else { return nil }
         switch raw {
         case .string(let s): return s.isEmpty ? nil : s
-        case .number(let n): return n == n.rounded() ? String(Int(n)) : String(n)
+        case .number(let n): return Int(exactly: n).map(String.init) ?? String(n)
         case .bool(let b): return b ? "true" : "false"
         case .object(let o): return o["name"]?.stringValue ?? o["value"]?.stringValue
         case .array(let a): return a.lazy.compactMap { optionLabel($0) }.first

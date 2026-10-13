@@ -55,7 +55,7 @@ public struct QuickSettings: Codable, Equatable, Sendable {
         case "panelOpacity": if let n = value.numberValue { q.panelOpacity = min(100, max(40, n)) }
         case "alwaysOnTop": if let b = value.boolValue { q.alwaysOnTop = b }
         case "refreshMinutes":
-            if let n = value.numberValue, [0, 1, 5, 15].contains(Int(n)) { q.refreshMinutes = Int(n) }
+            if let n = value.numberValue, let m = Int(exactly: n), [0, 1, 5, 15].contains(m) { q.refreshMinutes = m }
         default: break
         }
         return q

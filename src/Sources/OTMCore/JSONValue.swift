@@ -55,11 +55,13 @@ public enum JSONValue: Codable, Equatable, Sendable {
     }
 
     public var numberValue: Double? {
+        let n: Double?
         switch self {
-        case .number(let n): return n
-        case .string(let s): return Double(s.trimmingCharacters(in: .whitespaces))
-        default: return nil
+        case .number(let v): n = v
+        case .string(let s): n = Double(s.trimmingCharacters(in: .whitespaces))
+        default: n = nil
         }
+        return n.flatMap { $0.isFinite ? $0 : nil }
     }
 
     public var boolValue: Bool? {

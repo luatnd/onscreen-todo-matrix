@@ -162,4 +162,41 @@ import Testing
         await m.refresh(.manual)
         #expect(m.unmappedLabels[.urgency] == ["Blocker"])
     }
+
+    @Test func manualRefreshDuringInFlightRerunsWithNewPreset() async {
+        let gated = GatedJiraAPI()
+        var cfg = configuredConfig()
+        cfg.presets.append(JQLPreset(id: "team", name: "Team", jql: "project = T"))
+        try? ConfigStore(directory: dir).save(cfg)
+        let t = clockNow
+        let m = AppModel(configStore: ConfigStore(directory: dir), cache: IssueCache(directory: dir), tokenStore: tokens,
+                         scheduler: RefreshScheduler(now: { t }), makeClient: { _, _, _ in gated }, now: { t })
+        let a = Task { await m.refresh(.manual) }
+        while gated.searchJQLs.isEmpty { await Task.yield() }
+        m.selectPreset(id: "team")
+        await m.refresh(.manual)               // dropped before the fix; must be remembered
+        gated.release([issue("A-1", value: 1, sp: 1, priority: "Low")])
+        await a.value
+        #expect(gated.searchJQLs == [JQLPreset.myOpenWork.jql, "project = T"])
+        #expect(m.renderState.tasks.map(\.key) == ["A-1"])
+    }
+}
+
+/// First `search` suspends until `release`; later ones return the same issues immediately.
+final class GatedJiraAPI: JiraAPI {
+    var searchJQLs: [String] = []
+    private var cont: CheckedContinuation<[JiraIssue], Never>?
+    private var issues: [JiraIssue] = []
+    func myself() async throws -> JiraUser { JiraUser(displayName: "Neo", accountId: "1") }
+    func fields() async throws -> [JiraField] { [] }
+    func priorities() async throws -> [String] { [] }
+    func approximateCount(jql: String) async throws -> Int { 0 }
+    func search(jql: String, fields: [String], cap: Int) async throws -> SearchResult {
+        searchJQLs.append(jql)
+        if searchJQLs.count == 1 {
+            return SearchResult(issues: await withCheckedContinuation { cont = $0 })
+        }
+        return SearchResult(issues: issues)
+    }
+    func release(_ result: [JiraIssue]) { issues = result; cont?.resume(returning: result); cont = nil }
 }

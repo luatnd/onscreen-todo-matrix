@@ -24,6 +24,7 @@ public final class AppModel: ObservableObject {
     private var truncated: String?
     private var lastMapped: [MappedTask] = []
     private var isRefreshing = false
+    private var rerunRequested = false
 
     public static let issueCap = 500
 
@@ -63,11 +64,23 @@ public final class AppModel: ObservableObject {
     }
 
     public func refresh(_ trigger: RefreshTrigger) async {
-        guard !isRefreshing, isConfigured,
+        if isRefreshing {
+            if trigger == .manual { rerunRequested = true }
+            return
+        }
+        guard isConfigured,
               scheduler.shouldRefresh(trigger, intervalMinutes: config.quick.refreshMinutes),
               let api = try? makeAPI() else { return }
         isRefreshing = true
-        defer { isRefreshing = false }
+        await fetch(api)
+        isRefreshing = false
+        if rerunRequested {
+            rerunRequested = false
+            await refresh(.manual)
+        }
+    }
+
+    private func fetch(_ api: JiraAPI) async {
         let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
         do {
             let result = try await api.search(jql: config.activePreset.jql, fields: fetchFields(), cap: Self.issueCap)
@@ -92,6 +105,7 @@ public final class AppModel: ObservableObject {
     }
 
     public func updateConfig(_ newConfig: AppConfig) {
+        banner = nil // stale error; the next refresh re-sets it if still failing
         persist(newConfig)
         scheduler.resume()
     }
@@ -100,7 +114,7 @@ public final class AppModel: ObservableObject {
         try tokenStore.write(newToken)
         token = newToken
         tokenError = false
-        if banner?.hasPrefix("Keychain") == true { banner = nil }
+        banner = nil
         scheduler.resume()
         rebuild(previous: nil)
     }

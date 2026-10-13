@@ -17,6 +17,10 @@ import Testing
     @Test func numberValueParsesNumericStrings() {
         #expect(JSONValue.string("8").numberValue == 8)
         #expect(JSONValue.string("abc").numberValue == nil)
+        #expect(JSONValue.string("nan").numberValue == nil)
+        #expect(JSONValue.string("inf").numberValue == nil)
+        #expect(JSONValue.number(.infinity).numberValue == nil)
+        #expect(JSONValue.number(.nan).numberValue == nil)
     }
 
     @Test func roundTripsThroughJSON() throws {
@@ -106,6 +110,9 @@ import Testing
         #expect(q.applying(key: "panelOpacity", value: .number(10)).panelOpacity == 40)
         #expect(q.applying(key: "grid", value: .bool(false)).grid == false)
         #expect(q.applying(key: "refreshMinutes", value: .number(15)).refreshMinutes == 15)
+        #expect(q.applying(key: "refreshMinutes", value: .number(.infinity)).refreshMinutes == 5)
+        #expect(q.applying(key: "refreshMinutes", value: .number(.nan)).refreshMinutes == 5)
+        #expect(q.applying(key: "refreshMinutes", value: .number(1e30)).refreshMinutes == 5)
         #expect(q.applying(key: "refreshMinutes", value: .number(7)).refreshMinutes == 5)
         #expect(q.applying(key: "rotation", value: .string("free")).rotation == "free")
         #expect(q.applying(key: "unknown", value: .null) == q)
