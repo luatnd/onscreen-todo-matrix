@@ -35,3 +35,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1420; col
 #next { flex: none; padding: 6px 10px; border-top: 1px solid #1e2636; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #next b { color: #f4c542; } #next span { cursor: pointer; } #next span:hover { color: #e8ecf4; }
 #q { -webkit-user-select: text; user-select: text; }
+#bReset { position: absolute; left: 10px; bottom: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(30,38,54,.85); border: 1px solid #2b3550; color: #c9d2e3; font-size: 15px; cursor: pointer; z-index: 3; padding: 0; line-height: 1; }
+#bReset:hover { color: #fff; border-color: #3b82f6; }
+#bReset.atDefault { opacity: .35; }

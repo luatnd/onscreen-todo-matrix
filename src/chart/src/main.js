@@ -59,6 +59,8 @@ function draw() {
     w, h, tasks: displayTasks(), cam: cam(), settings: S(), selectedKey: st.sel, matches, pulses: st.pulses, now,
   });
   placeCard();
+  const dv = st.state.view;
+  $('bReset').classList.toggle('atDefault', Math.abs(st.yaw - dv.yaw) < 0.05 && Math.abs(st.pitch - dv.pitch) < 0.05 && Math.abs(st.zoom - dv.zoom) < 0.005);
   $('angTxt').textContent = `${normalizeYaw(st.yaw).toFixed(1)}° / ${st.pitch.toFixed(1)}° · ${st.zoom.toFixed(2)}×`;
   const animating = st.glide || [...st.pulses.values()].some((t) => now - t < 1600);
   if (animating && !raf) raf = requestAnimationFrame(() => { raf = 0; draw(); });
@@ -267,7 +269,9 @@ window.addEventListener('mouseup', (e) => {
   if (d.moved) return refitAnimated();
   if (e.target === cv) { const m = hit(e); select(m ? m.t.key : null); }
 });
-cv.addEventListener('dblclick', () => { if (!st.state) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); });
+function resetView() { if (!st.state) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); }
+cv.addEventListener('dblclick', resetView);
+$('bReset').addEventListener('click', resetView);
 cv.addEventListener('wheel', (e) => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * Math.exp(-e.deltaY * 0.0015))); refitNow(); draw(); syncQS(); }, { passive: false });
 cv.addEventListener('mousemove', (e) => {
   const tip = $('tip');
