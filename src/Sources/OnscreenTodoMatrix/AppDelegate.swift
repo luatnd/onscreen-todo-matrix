@@ -19,10 +19,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             tokenStore: KeychainTokenStore(), scheduler: RefreshScheduler(),
             makeClient: { site, email, token in JiraClient(site: site, email: email, token: token) }
         )
+        setUpMainMenu()
         panel = PanelController(model: model)
         settings = SettingsWindowController(model: model) { [weak self] in
-            self?.panel.show()
-            Task { await self?.model.refresh(.manual) }
+            guard let self, self.model.isConfigured else { return }
+            self.panel.show()
+            Task { await self.model.refresh(.manual) }
         }
         panel.chart.onMessage = { [weak self] msg in self?.handle(msg) }
         setUpStatusItem()
@@ -42,6 +44,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             settings.show()
         }
+    }
+
+    /// Accessory apps never show the menu bar, but ⌘V/⌘C/⌘A/⌘X/⌘Z key equivalents only route through a main menu.
+    private func setUpMainMenu() {
+        let main = NSMenu()
+        let appItem = NSMenuItem()
+        appItem.submenu = NSMenu()
+        main.addItem(appItem)
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z").keyEquivalentModifierMask = [.command, .shift]
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
+        editItem.submenu = edit
+        main.addItem(editItem)
+        NSApp.mainMenu = main
     }
 
     // MARK: - Status item
@@ -87,7 +109,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "quickSetting":
             if let key = msg["key"] as? String { model.setQuickSetting(key: key, value: JSONValue(any: msg["value"])) }
         case "saveDefaultView":
-            if let yaw = msg["yaw"] as? Double, let pitch = msg["pitch"] as? Double, let zoom = msg["zoom"] as? Double {
+            if let yaw = msg["yaw"] as? Double, let pitch = msg["pitch"] as? Double, let zoom = msg["zoom"] as? Double,
+               yaw.isFinite, pitch.isFinite, zoom.isFinite {
                 model.saveDefaultView(yaw: yaw, pitch: pitch, zoom: zoom)
             }
         default:

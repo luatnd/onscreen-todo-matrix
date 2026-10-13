@@ -9,10 +9,19 @@ struct SettingsView: View {
     @ObservedObject var vm: SettingsViewModel
     @State var tab: SettingsTab = .connection
     let onDone: () -> Void
+    /// Latched at creation so the setup header (and its Done button) survives becoming configured mid-wizard.
+    @State private var wizard: Bool
+
+    init(model: AppModel, vm: SettingsViewModel, onDone: @escaping () -> Void) {
+        self.model = model
+        self.vm = vm
+        self.onDone = onDone
+        _wizard = State(initialValue: !model.isConfigured)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            if !model.isConfigured { setupHeader }
+            if wizard { setupHeader }
             TabView(selection: $tab) {
                 ConnectionTab(vm: vm).tabItem { Text("1. Connect") }.tag(SettingsTab.connection)
                 FiltersTab(model: model, vm: vm).tabItem { Text("2. Filter") }.tag(SettingsTab.filters)
@@ -89,7 +98,10 @@ struct FiltersTab: View {
                         if model.config.activePresetId == preset.id {
                             Text("Active").foregroundStyle(.green)
                         } else {
-                            Button("Make active") { model.selectPreset(id: preset.id) }
+                            Button("Make active") {
+                                model.selectPreset(id: preset.id)
+                                Task { await model.refresh(.manual) }
+                            }
                         }
                         Button("Delete", role: .destructive) { delete(preset.id) }
                             .disabled(model.config.presets.count <= 1)
@@ -122,8 +134,10 @@ struct FiltersTab: View {
     private func delete(_ id: String) {
         var c = model.config
         c.presets.removeAll { $0.id == id }
-        if c.activePresetId == id { c.activePresetId = c.presets.first?.id ?? JQLPreset.myOpenWork.id }
+        let wasActive = c.activePresetId == id
+        if wasActive { c.activePresetId = c.presets.first?.id ?? JQLPreset.myOpenWork.id }
         model.updateConfig(c)
+        if wasActive { Task { await model.refresh(.manual) } }
     }
 }
 

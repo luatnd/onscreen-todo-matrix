@@ -28,6 +28,8 @@ final class SettingsViewModel: ObservableObject {
         busy = true
         defer { busy = false }
         var c = model.config
+        let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
         c.site = site
         c.email = email
         model.updateConfig(c)
@@ -41,6 +43,7 @@ final class SettingsViewModel: ObservableObject {
             let me = try await model.makeAPI().myself()
             connectionStatus = "Connected as \(me.displayName)"
             await loadFields()
+            await model.refresh(.manual)
         } catch {
             connectionStatus = Self.describe(error)
         }
