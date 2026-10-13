@@ -52,10 +52,17 @@ final class SettingsViewModel: ObservableObject {
         guard let account = accountId.flatMap({ model.config.account(id: $0) }) ?? model.activeAccount,
               let api = try? model.makeAPI(accountId: account.id) else { return }
         guard let loaded = try? await api.fields() else { return }
-        fields = loaded.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        if let p = try? await api.priorities() { priorities = p }
-        let suggested = DefaultMappings.suggest(fields: fields, current: account.axes)
-        if suggested != account.axes { model.updateAxes(accountId: account.id) { $0 = suggested } }
+        let sorted = loaded.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        let loadedPriorities = try? await api.priorities()
+        // The Axes tab edits the active account, so only its fields feed the shared lists.
+        if account.id == model.activeAccount?.id {
+            fields = sorted
+            if let p = loadedPriorities { priorities = p }
+        }
+        // Re-read after the awaits so edits made during the network calls aren't overwritten.
+        guard let current = model.config.account(id: account.id) else { return }
+        let suggested = DefaultMappings.suggest(fields: sorted, current: current.axes)
+        if suggested != current.axes { model.updateAxes(accountId: account.id) { $0 = suggested } }
     }
 
     func testJQL(_ preset: JQLPreset) async {
