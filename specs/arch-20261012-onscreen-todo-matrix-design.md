@@ -3,7 +3,7 @@
 **Version:** 1.0.0
 **Date:** 2026-10-12
 **Category:** arch
-**Status:** Design approved in brainstorming session (2026-10-12); pending written-spec review
+**Status:** Design approved in brainstorming session (2026-10-12); implemented. **Superseded by [v1.1.0](arch-20261013-onscreen-todo-matrix-design-v1.1.0.md)** (as built) and [v1.2.0](arch-20261013-onscreen-todo-matrix-design-v1.2.0.md) (multi-account). Rows D16–D19 and a few body lines below were edited during the build; v1.1.0 is the clean as-built version.
 **Prototype:** [`../prototype/panel-prototype.html`](../prototype/panel-prototype.html), the final interactive panel; brainstorm mockups are in [`../prototype/brainstorm-mockups/`](../prototype/brainstorm-mockups/)
 
 ---
