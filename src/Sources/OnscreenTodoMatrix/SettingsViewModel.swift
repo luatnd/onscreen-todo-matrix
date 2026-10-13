@@ -20,10 +20,9 @@ final class SettingsViewModel: ObservableObject {
     @Published var newPreset: NewPresetRequest?
     @Published var generalError = ""
 
-    // Used by the v1.1 Filters and Axes tabs until Tasks 9 and 10 replace them.
+    // Used by the v1.1 Axes tab until Task 10 replaces it.
     @Published var fields: [JiraField] = []
     @Published var priorities: [String] = []
-    @Published var jqlStatus: [String: String] = [:]
 
     let model: AppModel
 
@@ -63,11 +62,6 @@ final class SettingsViewModel: ObservableObject {
         guard let current = model.config.account(id: account.id) else { return }
         let suggested = DefaultMappings.suggest(fields: sorted, current: current.axes)
         if suggested != current.axes { model.updateAxes(accountId: account.id) { $0 = suggested } }
-    }
-
-    func testJQL(_ preset: JQLPreset) async {
-        jqlStatus[preset.id] = "Testing…"
-        jqlStatus[preset.id] = await model.testJQL(preset.jql, accountId: preset.accountId).text
     }
 
     /// Values offered in the option-level editor.

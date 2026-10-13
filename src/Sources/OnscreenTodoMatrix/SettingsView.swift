@@ -24,7 +24,7 @@ struct SettingsView: View {
             if wizard { setupHeader }
             TabView(selection: $vm.tab) {
                 AccountsTab(model: model, vm: vm).tabItem { Text("Accounts") }.tag(SettingsTab.accounts)
-                FiltersTab(model: model, vm: vm).tabItem { Text("Presets") }.tag(SettingsTab.presets)
+                PresetsTab(model: model, vm: vm).tabItem { Text("Presets") }.tag(SettingsTab.presets)
                 AxesTab(model: model, vm: vm).tabItem { Text("Axes") }.tag(SettingsTab.axes)
                 ShortcutsTab().tabItem { Text("Shortcuts") }.tag(SettingsTab.shortcuts)
                 GeneralTab(model: model, vm: vm).tabItem { Text("General") }.tag(SettingsTab.general)
@@ -32,6 +32,9 @@ struct SettingsView: View {
             .padding(12)
         }
         .frame(minWidth: 620, minHeight: 520)
+        .sheet(item: $vm.newPreset) { request in
+            NewPresetSheet(model: model, request: request, onCreated: onDone)
+        }
     }
 
     private var setupHeader: some View {
@@ -56,67 +59,6 @@ struct SettingsView: View {
     private func step(_ title: String, done: Bool) -> some View {
         Label(title, systemImage: done ? "checkmark.circle.fill" : "circle")
             .foregroundStyle(done ? .green : .secondary)
-    }
-}
-
-struct FiltersTab: View {
-    @ObservedObject var model: AppModel
-    @ObservedObject var vm: SettingsViewModel
-
-    var body: some View {
-        Form {
-            ForEach(model.config.presets) { preset in
-                Section {
-                    TextField("Name", text: binding(preset.id, \.name))
-                    TextField("JQL", text: binding(preset.id, \.jql), axis: .vertical).lineLimit(2...5)
-                    HStack {
-                        Button("Test") { Task { await vm.testJQL(currentPreset(preset.id) ?? preset) } }
-                        Text(vm.jqlStatus[preset.id] ?? "").foregroundStyle(.secondary)
-                        Spacer()
-                        if model.config.activePresetId == preset.id {
-                            Text("Active").foregroundStyle(.green)
-                        } else {
-                            Button("Make active") {
-                                model.selectPreset(id: preset.id)
-                                Task { await model.refresh(.manual) }
-                            }
-                        }
-                        Button("Delete", role: .destructive) { delete(preset.id) }
-                            .disabled(model.config.presets.count <= 1)
-                    }
-                }
-            }
-            Button("Add preset") {
-                var c = model.config
-                c.presets.append(JQLPreset(id: UUID().uuidString, name: "New preset", jql: "assignee = currentUser() AND statusCategory != Done",
-                                           accountId: model.activeAccount?.id ?? JiraAccount.defaultId))
-                model.updateConfig(c)
-            }
-        }
-        .formStyle(.grouped)
-    }
-
-    private func currentPreset(_ id: String) -> JQLPreset? { model.config.presets.first { $0.id == id } }
-
-    private func binding(_ id: String, _ path: WritableKeyPath<JQLPreset, String>) -> Binding<String> {
-        Binding(
-            get: { currentPreset(id)?[keyPath: path] ?? "" },
-            set: { value in
-                var c = model.config
-                guard let i = c.presets.firstIndex(where: { $0.id == id }) else { return }
-                c.presets[i][keyPath: path] = value
-                model.updateConfig(c)
-            }
-        )
-    }
-
-    private func delete(_ id: String) {
-        var c = model.config
-        c.presets.removeAll { $0.id == id }
-        let wasActive = c.activePresetId == id
-        if wasActive { c.activePresetId = c.presets.first?.id ?? "" }
-        model.updateConfig(c)
-        if wasActive { Task { await model.refresh(.manual) } }
     }
 }
 
