@@ -5,6 +5,7 @@ import { chooseCardCorner } from './labels.js';
 import { validateState } from './state.js';
 import { stackKey, byScoreThenKey } from './stacks.js';
 import { describeDerived, tipSuffix } from './derived.js';
+import { buttonLabel, initialHighlight, menuKey, menuRows, messageFor, rowAction, safeColor, shortcutPresetId } from './presetMenu.js';
 import sample from '../../fixtures/render-state.json';
 
 const $ = (id) => document.getElementById(id);
@@ -33,7 +34,7 @@ const cam = () => ({ yaw: st.yaw, pitch: st.pitch, ...DEFAULT_CAMERA, fit: st.fi
 const matches = (t) => !st.query || `${t.key} ${t.summary}`.toLowerCase().includes(st.query);
 // const byScore = () => [...st.tasks].sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
 const byScore = () => [...st.tasks].sort(byScoreThenKey);
-/** Members of the stack holding key (D19), in stack order; only search matches unless none match. */
+/** Members of the stack holding key (D27), in stack order; only search matches unless none match. */
 function stackOf(key) {
   const t = key && st.tasks.find((x) => x.key === key);
   if (!t) return [];
@@ -84,6 +85,7 @@ function draw() {
   const now = performance.now();
   st.scene = drawScene(g, {
     w, h, tasks: displayTasks(), cam: cam(), settings: S(), selectedKey: st.sel, matches, pulses: st.pulses, now,
+    axisLabels: st.state.axisLabels,
   });
   placeCard();
   $('bReset').classList.toggle('show', !atDefault());
@@ -117,12 +119,13 @@ function render(state) {
 
 function renderChrome() {
   const s = st.state;
-  const sel = $('preset');
-  sel.innerHTML = '';
-  for (const p of s.presets) {
-    const o = document.createElement('option'); o.value = p.id; o.textContent = p.name;
-    if (p.id === s.activePresetId) o.selected = true;
-    sel.appendChild(o);
+  const lbl = buttonLabel(s);
+  $('pbtn').querySelector('.dot').style.background = lbl.color || 'transparent';
+  $('pbtn').querySelector('.lbl').textContent = lbl.text;
+  if (menu) {
+    const rows = menuRows(s, menu.filter);
+    if (!rows[menu.hi] || rows[menu.hi].kind === 'header') menu.hi = initialHighlight(rows);
+    drawMenu();
   }
   const b = $('banner');
   const text = s.status.banner || s.status.truncated;
@@ -130,6 +133,7 @@ function renderChrome() {
   b.textContent = text || '';
   b.className = s.status.banner && /settings/i.test(s.status.banner) ? 'link' : '';
   $('setup').style.display = s.configured ? 'none' : 'flex';
+  $('setupMsg').textContent = (s.setup && s.setup.message) || 'Finish setup to see your Jira issues.';
   const top = byScore().filter((t) => t.rank).slice(0, 3);
   const next = $('next');
   if (!s.tasks.length) next.innerHTML = s.configured ? '<b>Next:</b> No issues match this filter' : '';
@@ -267,19 +271,85 @@ $('qsRst').onclick = () => {
   refitAnimated(); syncQS();
 };
 
+// ---------- preset menu (§11.6) ----------
+let menu = null; // { filter, hi } while open
+function openMenu() {
+  if (!st.state) return;
+  menu = { filter: '', hi: initialHighlight(menuRows(st.state, '')) };
+  drawMenu();
+}
+function closeMenu() { menu = null; drawMenu(); $('pn').focus(); }
+function runMenuAction(action) {
+  if (!action) return;
+  const msg = messageFor(action, st.state);
+  closeMenu();
+  if (msg) post(msg);
+}
+function drawMenu() {
+  const el = $('pmenu');
+  if (!menu || !st.state) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const rows = menuRows(st.state, menu.filter);
+  let html = menu.filter ? `<div class="pf">${escapeHTML(menu.filter)}</div>` : '';
+  rows.forEach((r, i) => {
+    if (r.kind === 'header') {
+      if (!r.account) { html += '<div class="ph warn">⚠ Account missing</div>'; return; }
+      html += `<div class="ph"><span class="dot" style="background:${safeColor(r.account.color)}"></span>${escapeHTML(r.account.name)}</div>`;
+      return;
+    }
+    const cls = `pi${i === menu.hi ? ' hi' : ''}`;
+    if (r.kind === 'action') {
+      if (rows[i - 1] && rows[i - 1].kind !== 'action') html += '<div class="sep"></div>';
+      html += `<div class="${cls}" data-i="${i}"><span class="ck"></span>${escapeHTML(r.label)}</div>`;
+      return;
+    }
+    const warn = r.error ? ' <span class="warn">⚠</span>' : '';
+    html += `<div class="${cls}" data-i="${i}"><span class="ck">${r.active ? '✓' : ''}</span>${escapeHTML(r.name)}${warn}<span class="sc">${r.shortcut || ''}</span></div>`;
+  });
+  el.innerHTML = html;
+  el.style.display = 'block';
+  el.querySelectorAll('[data-i]').forEach((d) => {
+    d.onmousedown = (e) => e.preventDefault();
+    d.onmouseenter = () => { const i = Number(d.dataset.i); if (menu.hi !== i) { menu.hi = i; drawMenu(); } };
+    d.onclick = () => runMenuAction(rowAction(rows[Number(d.dataset.i)]));
+  });
+  const hi = el.querySelector('.pi.hi');
+  if (hi) hi.scrollIntoView({ block: 'nearest' });
+}
+$('pbtn').onclick = () => (menu ? closeMenu() : openMenu());
+window.addEventListener('mousedown', (e) => { if (menu && !$('pwrap').contains(e.target)) closeMenu(); });
+
 // ---------- top bar ----------
 $('bR').onclick = () => post({ type: 'refetch' });
 $('bQ').onclick = toggleQS;
 $('bS').onclick = () => post({ type: 'openSettings' });
-$('bSetup').onclick = () => post({ type: 'openSettings' });
-$('banner').onclick = () => { if ($('banner').className === 'link') post({ type: 'openSettings' }); };
-$('preset').onchange = (e) => post({ type: 'selectPreset', id: e.target.value });
+$('bSetup').onclick = () => post({ type: 'openSettings', tab: (st.state && st.state.setup && st.state.setup.tab) || 'accounts' });
+$('banner').onclick = () => {
+  if ($('banner').className !== 'link') return;
+  const tab = st.state && st.state.status.bannerTab;
+  post(tab ? { type: 'openSettings', tab } : { type: 'openSettings' });
+};
 
 // ---------- keyboard ----------
 window.addEventListener('keydown', (e) => {
   if (!st.state || document.activeElement === q) return;
-  if (document.activeElement === $('preset')) { if (e.key !== 'Escape') return; $('pn').focus(); }
   const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
+  if (menu && ['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)) return;
+  if (menu && !m && !e.altKey) {
+    e.preventDefault();
+    const r = menuKey(st.state, menu, e.key);
+    menu = r.menu;
+    if (r.action && r.action.type === 'close') return closeMenu();
+    if (r.action) return runMenuAction(r.action);
+    return drawMenu();
+  }
+  if (menu) closeMenu();
+  if (m && /^[1-9]$/.test(e.key)) {
+    e.preventDefault();
+    const id = shortcutPresetId(st.state, e.key);
+    if (id) post({ type: 'selectPreset', id });
+    return;
+  }
+  if (!m && k === 'p') { e.preventDefault(); return openMenu(); }
   if (e.key === 'Tab') { e.preventDefault(); return step(e.shiftKey ? -1 : 1); }
   if (!m && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && st.sel && !['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) {
     if (stepInStack(e.key === 'ArrowLeft' ? -1 : 1)) e.preventDefault();
@@ -326,14 +396,17 @@ window.addEventListener('mouseup', (e) => {
   // if (e.target === cv) { const m = hit(e); select(m ? m.t.key : null); }
   if (e.target === cv) {
     const m = hit(e);
-    // Click a stack: best member first; clicking it again cycles through the members (D19).
+    // Click a stack: best member first; clicking it again cycles through the members (D27).
     if (m && m.lit.some((t) => t.key === st.sel) && stepInStack(1)) return;
     select(m ? m.lit[0].key : null);
   }
 });
 function resetView() { if (!st.state || atDefault()) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); saveLastViewSoon(); toast('View reset'); }
-cv.addEventListener('dblclick', resetView);
 $('bReset').addEventListener('click', resetView);
+// double-click a task dot opens it in Jira; double-click on empty space does nothing
+// cv.addEventListener('dblclick', (e) => { const m = hit(e); if (m) { select(m.t.key); openIssue(); } });
+// On a stack (D27) double-click opens its best matching member.
+cv.addEventListener('dblclick', (e) => { const m = hit(e); if (m) { select(m.lit[0].key); openIssue(); } });
 cv.addEventListener('wheel', (e) => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * Math.exp(-e.deltaY * 0.0015))); refitNow(); draw(); syncQS(); saveLastViewSoon(); }, { passive: false });
 cv.addEventListener('mousemove', (e) => {
   const tip = $('tip');

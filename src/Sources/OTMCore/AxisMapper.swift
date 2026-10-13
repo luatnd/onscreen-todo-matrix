@@ -72,7 +72,7 @@ public enum AxisMapper {
         }
     }
 
-    // MARK: Effort fallback (D21)
+    // MARK: Effort fallback (D29)
 
     /// 1 working day = 8 h (Jira's default; the site's own hours/day cannot be read through the read-only API).
     static let workdaySeconds: Double = 8 * 3600
@@ -141,7 +141,7 @@ public enum AxisMapper {
         for axis in Axis.allCases {
             if case .number(let id, _, _, _)? = axes[axis].mapping { ranges[axis] = autoRange(fieldId: id, issues: issues) }
         }
-        // Effort fallback (D21): issues with no Original estimate but logged time or a start/end window.
+        // Effort fallback (D29): issues with no Original estimate but logged time or a start/end window.
         var derived: [String: DerivedSeconds] = [:]
         if let tl = timelineFallback(for: axes.effort), case .number(let id, _, _, _)? = axes.effort.mapping {
             for issue in issues where issue.fields[id]?.numberValue == nil {
@@ -211,7 +211,18 @@ public enum DefaultMappings {
         }
     }
 
-    /// Pre-fills empty axes: urgency ← Priority, effort ← Story Points / Story point estimate / Original estimate.
+    /// Saves each mapped axis' field display name from the loaded field list (unknown ids keep their name).
+    public static func withFieldNames(_ axes: AxesConfig, fields: [JiraField]) -> AxesConfig {
+        var a = axes
+        for axis in Axis.allCases {
+            guard let id = a[axis].mapping?.fieldId, let field = fields.first(where: { $0.id == id }) else { continue }
+            a[axis].fieldName = field.name
+        }
+        return a
+    }
+
+    /// Pre-fills empty axes: urgency ← Priority, effort ← Story Points / Story point estimate / Original estimate;
+    /// then refreshes the saved field names of all mapped axes.
     public static func suggest(fields: [JiraField], current: AxesConfig) -> AxesConfig {
         var a = current
         if a.urgency.mapping == nil, fields.contains(where: { $0.id == "priority" }) {
@@ -223,10 +234,10 @@ public enum DefaultMappings {
                 a.effort.mapping = .number(fieldId: sp.id, min: nil, max: nil, invert: false)
             } else if fields.contains(where: { $0.id == "timeoriginalestimate" }) {
                 a.effort.mapping = .number(fieldId: "timeoriginalestimate", min: nil, max: nil, invert: false)
-                // D21: fresh setups get the timeline fallback when the site has a "Start date" field.
+                // D29: fresh setups get the timeline fallback when the site has a "Start date" field.
                 if let start = guessStartField(fields) { a.effort.timeline = TimelineFallback(startFieldId: start.id) }
             }
         }
-        return a
+        return withFieldNames(a, fields: fields)
     }
 }

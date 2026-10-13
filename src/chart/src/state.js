@@ -30,7 +30,25 @@ export function validateState(s) {
   }
   if (!isObj(s.settings)) e.push('settings missing');
   if (!isObj(s.status)) e.push('status missing');
+  if (!Array.isArray(s.accounts)) e.push('accounts must be an array');
+  else s.accounts.forEach((a, i) => {
+    if (!isObj(a)) { e.push(`accounts[${i}] must be an object`); return; }
+    for (const k of ['id', 'name', 'color']) if (typeof a[k] !== 'string') e.push(`accounts[${i}].${k} must be a string`);
+    if (typeof a.error !== 'boolean') e.push(`accounts[${i}].error must be a boolean`);
+  });
   if (!Array.isArray(s.presets)) e.push('presets must be an array');
+  else s.presets.forEach((p, i) => {
+    if (!isObj(p)) { e.push(`presets[${i}] must be an object`); return; }
+    for (const k of ['id', 'name', 'accountId']) if (typeof p[k] !== 'string') e.push(`presets[${i}].${k} must be a string`);
+  });
+  if (typeof s.activePresetId !== 'string') e.push('activePresetId must be a string');
   if (typeof s.configured !== 'boolean') e.push('configured must be a boolean');
+  if (!isObj(s.axisLabels)) e.push('axisLabels must be an object');
+  else for (const k of ['value', 'effort', 'urgency']) {
+    if (s.axisLabels[k] != null && typeof s.axisLabels[k] !== 'string') e.push(`axisLabels.${k} must be a string`);
+  }
+  if (s.setup != null && (!isObj(s.setup) || typeof s.setup.message !== 'string' || typeof s.setup.tab !== 'string')) {
+    e.push('setup must have string message and tab');
+  }
   return e;
 }

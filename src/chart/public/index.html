@@ -10,7 +10,10 @@
 <body>
 <div id="pn" tabindex="0">
   <div class="bar">
-    <select id="preset" title="JQL preset"></select>
+    <div id="pwrap">
+      <button id="pbtn" title="Preset (P)"><span class="dot"></span><span class="lbl"></span><span class="car">▾</span></button>
+      <div id="pmenu" role="listbox"></div>
+    </div>
     <input id="q" placeholder="Search summary or key…" autocomplete="off" spellcheck="false">
     <div class="sp">
       <span id="sync"></span>
@@ -22,11 +25,11 @@
   <div id="banner"></div>
   <div class="vp">
     <canvas id="cv"></canvas>
-    <button id="bReset" aria-label="Reset view" title="Reset view (R · double-click)"><span class="ico">⟲</span><span class="txt">Reset view</span></button>
+    <button id="bReset" aria-label="Reset view" title="Reset view (R)"><span class="ico">⟲</span><span class="txt">Reset view</span></button>
     <div id="tip"></div>
     <div id="card"></div>
     <div id="toast"></div>
-    <div id="setup"><p>Finish setup to see your Jira issues.</p><button id="bSetup">Open settings</button></div>
+    <div id="setup"><p id="setupMsg">Finish setup to see your Jira issues.</p><button id="bSetup">Open settings</button></div>
     <div id="qs">
       <h6>Quick settings <span class="lnk" id="qsX">✕</span></h6>
       <div class="r"><span>Labels</span><div class="seg" data-k="labelMode"><b data-v="smart">Smart</b><b data-v="all">All</b><b data-v="key">Key</b><b data-v="off">Off</b></div></div>

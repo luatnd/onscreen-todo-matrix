@@ -1,6 +1,6 @@
 import { project } from './projection.js';
 import { taskColor } from './color.js';
-import { placeLabels, brightness } from './labels.js';
+import { placeLabels, brightness, axisTitle, clampLabel } from './labels.js';
 import { groupStacks, isHollow } from './stacks.js';
 import { AXES, coneShape, placeAxisLabel } from './axes.js';
 
@@ -15,9 +15,10 @@ const FONT = '11px -apple-system, BlinkMacSystemFont, sans-serif';
 
 /**
  * Draws the whole scene and returns hit-test data.
- * o = { w, h, tasks, cam, settings, selectedKey, matches(task) -> bool, pulses: Map<key, startMs>, now }
+ * o = { w, h, tasks, cam, settings, selectedKey, matches(task) -> bool, pulses: Map<key, startMs>, now,
+ *       axisLabels: { value?, effort?, urgency? } (mapped field names) }
  * returns { proj: [{t, p, f, r, fade}], labels: [{item, rect, text}], hidden }
- * Each proj entry is one stack (D19): t = lead, stack = all members, lit = members matching the search.
+ * Each proj entry is one stack (D27): t = lead, stack = all members, lit = members matching the search.
  */
 export function drawScene(g, o) {
   const { w, h, cam, settings: S } = o;
@@ -37,8 +38,8 @@ export function drawScene(g, o) {
   };
   const txt = (p, s, c, align = 'center', clamp = true) => {
     g.fillStyle = c; g.font = FONT; g.textAlign = align; g.textBaseline = 'middle';
-    // g.fillText(s, Math.max(45, Math.min(w - 45, p.x)), p.y);
-    g.fillText(s, clamp ? Math.max(45, Math.min(w - 45, p.x)) : p.x, p.y);
+    const c2 = clampLabel(p.x, p.y, g.measureText(s).width, w, h, align);
+    g.fillText(s, c2.x, c2.y);
   };
 
   for (const [x0, x1, y0, y1, fill, name, hi] of ZONES) {
@@ -65,14 +66,15 @@ export function drawScene(g, o) {
     if (c.baseVisible) poly(c.ring, a.base);
     cones.push(c);
   }
-  // txt(P(1.12, 1, 0), 'Value', '#7aa2ff');
-  // txt(P(0, -0.14, 0), '← Less effort', '#6ee08f');
-  // txt(P(0, 1, 1.1), '↑ Urgency', '#ff7070');
-  // Axis names sit just beyond each cone apex on screen (D20).
+  const AL = o.axisLabels || {};
+  // txt(P(1.12, 1, 0), axisTitle('Value', AL.value), '#7aa2ff');
+  // txt(P(0, -0.14, 0), axisTitle('← Less effort', AL.effort), '#6ee08f');
+  // txt(P(0, 1, 1.1), axisTitle('↑ Urgency', AL.urgency), '#ff7070');
+  // Axis names (with the mapped field) sit just beyond each cone apex on screen (D28).
   g.font = FONT;
-  [['Value', '#7aa2ff'], ['← Less effort', '#6ee08f'], ['↑ Urgency', '#ff7070']].forEach(([s, c], i) => {
+  [[axisTitle('Value', AL.value), '#7aa2ff'], [axisTitle('← Less effort', AL.effort), '#6ee08f'], [axisTitle('↑ Urgency', AL.urgency), '#ff7070']].forEach(([s, c], i) => {
     const hw = g.measureText(s).width / 2 + 2, p = placeAxisLabel(cones[i].apex, P(...AXES[i].to), coneBoxes[i], hw, 7, w, h);
-    txt(p, s, c, 'center', false); // placeAxisLabel already keeps it inside the canvas
+    txt(p, s, c);
     coneBoxes.push({ x: p.x - hw, y: p.y - 7, w: 2 * hw, h: 14 }); // task labels avoid axis names too
   });
 
@@ -107,7 +109,7 @@ export function drawScene(g, o) {
     // const t = m.t, r = m.r, hollow = t.missing && (t.missing.value || t.missing.effort || t.missing.urgency);
     const t = m.t, r = m.r, hollow = isHollow(t), n = m.stack.length;
     g.globalAlpha = m.fade;
-    // Coin stack (D19): offset outlines behind the dot, same dot size.
+    // Coin stack (D27): offset outlines behind the dot, same dot size.
     for (let k = Math.min(n, 3) - 1; k >= 1; k--) {
       g.beginPath(); g.arc(m.p.x + 0.45 * r * k, m.p.y - 0.45 * r * k, r, 0, 7);
       g.fillStyle = hollow ? 'rgba(15,20,32,.9)' : taskColor(t, S.colorMode, 0.45); g.fill();
@@ -124,7 +126,7 @@ export function drawScene(g, o) {
       g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1; g.stroke();
     }
     // const pt = o.pulses.get(t.key);
-    if (m.stack.some((x) => x.derived)) { // effort estimated from the timeline / logged time (D21): dashed ring
+    if (m.stack.some((x) => x.derived)) { // effort estimated from the timeline / logged time (D29): dashed ring
       g.strokeStyle = 'rgba(232,236,244,.75)'; g.lineWidth = 1.2; g.setLineDash([2.5, 2.5]);
       g.beginPath(); g.arc(m.p.x, m.p.y, r + 3, 0, 7); g.stroke(); g.setLineDash([]);
     }
@@ -172,7 +174,7 @@ export function drawScene(g, o) {
     });
     g.globalAlpha = 1;
   }
-  // Previous single-line label drawing (before D19):
+  // Previous single-line label drawing (before D27):
   // for (const { item, rect, text } of placed) {
   //   const t = item.task;
   //   g.globalAlpha = item.fade;

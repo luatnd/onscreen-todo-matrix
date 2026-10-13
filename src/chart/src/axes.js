@@ -1,6 +1,6 @@
 import { project, DEFAULT_CAMERA } from './projection.js';
 
-/** Axis-tip cone size in floor units, built in render space (urgency × H) so it is never squashed (D20). */
+/** Axis-tip cone size in floor units, built in render space (urgency × H) so it is never squashed (D28). */
 // export const CONE = { len: 0.06, rad: 0.022, seg: 16 };
 export const CONE = { len: 0.06, rad: 0.016, seg: 16 }; // slimmer after visual check
 

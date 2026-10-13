@@ -8,7 +8,7 @@ const cam = { yaw: -179.7, pitch: 33.9, ...DEFAULT_CAMERA };
 test('fitPoints includes floor corners and urgency axis even with zero tasks', () => {
   // Review Focus #3
   // expect(fitPoints([])).toHaveLength(5);
-  expect(fitPoints([])).toHaveLength(8); // + 3 axis cone apexes (D20)
+  expect(fitPoints([])).toHaveLength(8); // + 3 axis cone apexes (D28)
   for (const a of AXES) expect(fitPoints([])).toContainEqual(coneApex(a));
   expect(fitPoints([{ value: 0.2, effort: 0.3, urgency: 0.4 }])).toContainEqual([0.2, 0.3, 0.4]);
 });

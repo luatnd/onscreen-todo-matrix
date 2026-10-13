@@ -73,12 +73,12 @@ public enum AxisMapping: Codable, Equatable, Sendable {
     }
 }
 
-/// How derived effort is displayed (D21): hours or days. 1 day = 8 h (Jira's default).
+/// How derived effort is displayed (D29): hours or days. 1 day = 8 h (Jira's default).
 public enum EffortUnit: String, Codable, CaseIterable, Sendable {
     case hours, days
 }
 
-/// Effort fallback (D21), used only when Effort is mapped to Original estimate and the issue has none:
+/// Effort fallback (D29), used only when Effort is mapped to Original estimate and the issue has none:
 /// logged time first, then the working days between a start field and an end field.
 /// Absent in older configs (decodes as nil = off).
 public struct TimelineFallback: Codable, Equatable, Sendable {
@@ -114,12 +114,21 @@ public struct DerivedEffort: Codable, Equatable, Sendable {
 public struct AxisConfig: Codable, Equatable, Sendable {
     public var mapping: AxisMapping?
     public var missingDefault: Double
+    /// Display name of the mapped Jira field (JiraField.name), saved with the mapping so the chart's axis
+    /// label works offline (§11.8.1). nil → the label falls back to the field id. Optional: older files decode.
+    public var fieldName: String?
+    /// Effort fallback (D29); only meaningful on the Effort axis. nil = off; absent in older files.
     public var timeline: TimelineFallback?
-    public init(mapping: AxisMapping? = nil, missingDefault: Double = 0.5, timeline: TimelineFallback? = nil) {
+    public init(mapping: AxisMapping? = nil, missingDefault: Double = 0.5, fieldName: String? = nil,
+                timeline: TimelineFallback? = nil) {
         self.mapping = mapping
         self.missingDefault = missingDefault
+        self.fieldName = fieldName
         self.timeline = timeline
     }
+
+    /// Axis-label name: the saved field name, else the field id; nil when unmapped.
+    public var labelName: String? { mapping.map { fieldName ?? $0.fieldId } }
 }
 
 public struct AxesConfig: Codable, Equatable, Sendable {

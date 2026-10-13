@@ -13,6 +13,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var bag = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let id = Bundle.main.bundleIdentifier,
+           NSRunningApplication.runningApplications(withBundleIdentifier: id).contains(where: { $0 != .current }) {
+            let alert = NSAlert()
+            alert.messageText = "Glance is already running"
+            alert.informativeText = "Quit the other Glance first, then open this one again."
+            alert.runModal()
+            NSApp.terminate(nil)
+            return
+        }
         let dir = ConfigStore.defaultDirectory()
         model = AppModel(
             configStore: ConfigStore(directory: dir), cache: IssueCache(directory: dir),
@@ -22,7 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setUpMainMenu()
         panel = PanelController(model: model)
         settings = SettingsWindowController(model: model) { [weak self] in
-            guard let self, self.model.isConfigured else { return }
+            guard let self, !self.model.config.accounts.isEmpty else { return }
             self.panel.show()
             Task { await self.model.refresh(.manual) }
         }
@@ -100,11 +109,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "hide":
             panel.hide()
         case "openSettings":
-            settings.show()
+            let tab = (msg["tab"] as? String).flatMap(SettingsTab.init(rawValue:))
+            settings.show(tab: tab, accountId: tab == .accounts || tab == .axes ? model.activeAccount?.id : nil)
+        case "newPreset":
+            if model.config.accounts.isEmpty {
+                settings.show(tab: .accounts)
+            } else {
+                settings.showNewPreset(accountId: msg["accountId"] as? String)
+            }
         case "selectPreset":
-            if let id = msg["id"] as? String {
-                model.selectPreset(id: id)
-                Task { await model.refresh(.manual) }
+            guard let id = msg["id"] as? String else { break }
+            switch model.selectPreset(id: id) {
+            case .selected: Task { await model.refresh(.manual) }
+            case .accountMissing: settings.show(tab: .presets)
+            case .notFound: break
             }
         case "quickSetting":
             if let key = msg["key"] as? String { model.setQuickSetting(key: key, value: JSONValue(any: msg["value"])) }

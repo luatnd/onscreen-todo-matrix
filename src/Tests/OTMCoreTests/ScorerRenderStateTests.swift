@@ -54,12 +54,59 @@ private func task(_ key: String, v: Double, e: Double, u: Double) -> MappedTask 
         let s = RenderStateBuilder.build(tasks: [task("A", v: 1, e: 0, u: 1)], previous: nil, config: c,
                                          status: RenderStatus(syncedAt: nil, banner: "b", truncated: nil), configured: false)
         #expect(s.settings.labelMode == "key")
-        #expect(s.presets == [RenderPreset(id: "my-open-work", name: "My open work"), RenderPreset(id: "p2", name: "Team")])
+        #expect(s.presets == [RenderPreset(id: "my-open-work", name: "My open work", accountId: "default"),
+                              RenderPreset(id: "p2", name: "Team", accountId: "default")])
+        #expect(s.accounts.isEmpty)
+        #expect(s.setup == nil)
         #expect(s.activePresetId == "my-open-work")
         #expect(s.tasks[0].rank == 1)
         #expect(s.tasks[0].fire)
         #expect(s.status.banner == "b")
         #expect(!s.configured)
+    }
+
+    @Test func buildEmitsAccountsWithColoursErrorsAndPresetsInMenuOrder() {
+        var c = AppConfig()
+        c.accounts = [JiraAccount(id: "default", name: "Personal"), JiraAccount(id: "c1", name: "Company")]
+        c.presets = [JQLPreset(id: "cw", name: "My company work", jql: "x", accountId: "c1"),
+                     JQLPreset(id: "mine", name: "My open work", jql: "x", accountId: "default")]
+        c.activePresetId = "cw"
+        let setup = RenderSetup(message: "Map axes for Company to see this preset", tab: "axes")
+        let s = RenderStateBuilder.build(tasks: [], previous: nil, config: c, status: RenderStatus(bannerTab: "accounts"),
+                                         configured: false, accountErrors: ["c1"], setup: setup)
+        #expect(s.accounts == [RenderAccount(id: "default", name: "Personal", color: "#3b82f6", error: false),
+                               RenderAccount(id: "c1", name: "Company", color: "#f59e0b", error: true)])
+        #expect(s.presets.map(\.id) == ["mine", "cw"])
+        #expect(s.activePresetId == "cw")
+        #expect(s.setup == setup)
+        #expect(s.status.bannerTab == "accounts")
+    }
+
+    @Test func axisLabelsComeFromTheActiveAccount() throws {
+        var personal = AxesConfig()
+        personal.urgency = AxisConfig(mapping: .option(fieldId: "priority", levels: [:]), fieldName: "Priority")
+        var company = AxesConfig()
+        company.value = AxisConfig(mapping: .option(fieldId: "customfield_200", levels: [:]), fieldName: "Business Value")
+        company.effort = AxisConfig(mapping: .number(fieldId: "customfield_201", min: nil, max: nil, invert: false))
+        var c = AppConfig()
+        c.accounts = [JiraAccount(id: "default", name: "Personal", axes: personal),
+                      JiraAccount(id: "c1", name: "Company", axes: company)]
+        c.presets.append(JQLPreset(id: "p2", name: "My company work", jql: "x", accountId: "c1"))
+        let mine = RenderStateBuilder.build(tasks: [], previous: nil, config: c, status: RenderStatus(), configured: true)
+        #expect(mine.axisLabels == RenderAxisLabels(value: nil, effort: nil, urgency: "Priority"))
+        c.activePresetId = "p2"
+        let theirs = RenderStateBuilder.build(tasks: [], previous: nil, config: c, status: RenderStatus(), configured: true)
+        #expect(theirs.axisLabels == RenderAxisLabels(value: "Business Value", effort: "customfield_201", urgency: nil))
+        let json = String(decoding: try RenderStateBuilder.encoder().encode(theirs), as: UTF8.self)
+        #expect(json.contains(#""axisLabels":{"effort":"customfield_201","value":"Business Value"}"#))
+    }
+
+    @Test func absentOptionalsAreOmittedFromJSON() throws {
+        let s = RenderStateBuilder.build(tasks: [], previous: nil, config: AppConfig(), status: RenderStatus(), configured: true)
+        let json = String(decoding: try RenderStateBuilder.encoder().encode(s), as: UTF8.self)
+        #expect(!json.contains("\"setup\""))
+        #expect(!json.contains("\"bannerTab\""))
+        #expect(json.contains("\"accounts\":[]"))
     }
 
     @Test func sharedFixtureDecodesAndRoundTrips() throws {
@@ -71,6 +118,13 @@ private func task(_ key: String, v: Double, e: Double, u: Double) -> MappedTask 
         #expect(state.tasks[2].rank == nil)
         #expect(state.view == ViewDefaults())
         #expect(state.settings == QuickSettings())
+        #expect(state.accounts == [RenderAccount(id: "default", name: "Personal", color: "#3b82f6", error: false),
+                                   RenderAccount(id: "c1f0", name: "Company", color: "#f59e0b", error: true)])
+        #expect(state.presets.map(\.accountId) == ["default", "default", "c1f0"])
+        #expect(state.activePresetId == "my-open-work")
+        #expect(state.setup == nil)
+        #expect(state.status.bannerTab == nil)
+        #expect(state.axisLabels == RenderAxisLabels(value: "Business Value", effort: "Story Points", urgency: "Priority"))
         let again = try RenderStateBuilder.decoder().decode(RenderState.self, from: RenderStateBuilder.encoder().encode(state))
         #expect(again == state)
     }

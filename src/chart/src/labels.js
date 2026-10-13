@@ -3,7 +3,7 @@ export const brightness = (t) => (t.urgency + (1 - t.effort) + t.value) / 3;
 const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 /**
- * Label lines for one dot or stack (D19). tasks: matching members in byScoreThenKey order.
+ * Label lines for one dot or stack (D27). tasks: matching members in byScoreThenKey order.
  * Smart: 2 titles then "+N more"; All: 5; Key: "K1, K2 +N"; Off: the selected member only.
  * The selected member is always shown; a hollow stack of 2+ gets an "N unset" header.
  * returns [{ text, task (null for header / more lines), sel }]
@@ -29,7 +29,7 @@ export function labelLines(tasks, { mode, selectedKey = null, unset = false }) {
 /**
  * items: [{ task, x, y, r }]; opts: { width, height, mode: smart|all|key|off, selectedKey, measure(text) }
  * Order: selected, then ranked (1..3), then brightness. Tries right, left, above, below.
- * A stack item also carries tasks (members, lead first), unset and an optional badge rect; it gets one multi-line rect (D19).
+ * A stack item also carries tasks (members, lead first), unset and an optional badge rect; it gets one multi-line rect (D27).
  * opts.obstacles: extra rects no label may cover (e.g. axis cones); badges block every label, their own included.
  */
 export function placeLabels(items, { width, height, mode, selectedKey, measure, obstacles = [] }) {
@@ -68,7 +68,7 @@ export function placeLabels(items, { width, height, mode, selectedKey, measure, 
   return { placed, hidden };
 }
 
-// Previous single-line placeLabels (before D19), kept for reference:
+// Previous single-line placeLabels (before D27), kept for reference:
 // /**
 //  * items: [{ task, x, y, r }]; opts: { width, height, mode: smart|all|key|off, selectedKey, measure(text) }
 //  * Order: selected, then ranked (1..3), then brightness. Tries right, left, above, below.
@@ -119,4 +119,20 @@ export function chooseCardCorner(obstacles, point, w, h, cw, ch, pad = 8) {
     if (score < bestScore) { best = c; bestScore = score; }
   }
   return best;
+}
+
+/**
+ * Axis label with the mapped Jira field name(s) (spec §11.8.1): axisTitle('↑ Urgency', 'Priority') → "↑ Urgency (Priority)".
+ * `names` is a string or an array (several fields join with " + "); nothing usable → "(not mapped)".
+ */
+export function axisTitle(base, names) {
+  const list = (Array.isArray(names) ? names : [names]).filter((n) => typeof n === 'string' && n.trim() !== '');
+  return `${base} (${list.length ? list.join(' + ') : 'not mapped'})`;
+}
+
+/** Keep a text of `width` px fully inside [8, w-8] x [12, h-12]; x is the anchor for align 'center' | 'left' | 'right'. */
+export function clampLabel(x, y, width, w, h, align = 'center') {
+  const left = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+  const L = Math.max(8, Math.min(w - 8 - width, left));
+  return { x: align === 'center' ? L + width / 2 : align === 'right' ? L + width : L, y: Math.max(12, Math.min(h - 12, y)) };
 }

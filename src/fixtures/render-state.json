@@ -22,7 +22,12 @@
   "settings": { "labelMode": "smart", "stemStyle": "dotted", "stemOpacity": 30, "colorMode": "rgb", "grid": true,
                 "zoneNames": true, "rotation": "limited", "panelOpacity": 100, "alwaysOnTop": false, "refreshMinutes": 5 },
   "status": { "syncedAt": "2026-10-12T10:42:00Z", "banner": null, "truncated": null },
-  "presets": [ { "id": "my-open-work", "name": "My open work" } ],
+  "accounts": [ { "id": "default", "name": "Personal", "color": "#3b82f6", "error": false },
+                { "id": "c1f0", "name": "Company", "color": "#f59e0b", "error": true } ],
+  "presets": [ { "id": "my-open-work", "name": "My open work", "accountId": "default" },
+               { "id": "due-week", "name": "Due this week", "accountId": "default" },
+               { "id": "p2", "name": "My company work", "accountId": "c1f0" } ],
   "activePresetId": "my-open-work",
-  "configured": true
+  "configured": true,
+  "axisLabels": { "value": "Business Value", "effort": "Story Points", "urgency": "Priority" }
 }

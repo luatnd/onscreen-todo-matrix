@@ -1,4 +1,4 @@
-/** Presentation of an effort derived from logged time or the timeline window (D21). */
+/** Presentation of an effort derived from logged time or the timeline window (D29). */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** One decimal, no trailing ".0". */
