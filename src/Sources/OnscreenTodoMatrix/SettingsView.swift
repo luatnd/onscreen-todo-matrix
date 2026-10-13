@@ -36,9 +36,9 @@ struct SettingsView: View {
 
     private var setupHeader: some View {
         HStack(spacing: 14) {
-            step("1. Connect", done: vm.isConnected || (model.storedToken != nil && model.config.siteURL != nil))
+            step("1. Connect", done: vm.isConnected || (model.activeAccount.map { model.storedToken(accountId: $0.id) != nil && $0.siteURL != nil } ?? false))
             step("2. Filter", done: !model.config.presets.isEmpty)
-            step("3. Axes", done: model.config.axes.isComplete)
+            step("3. Axes", done: model.activeAccount?.axes.isComplete ?? false)
             Spacer()
             Button(tab == .axes ? "Done · show panel" : "Next") {
                 switch tab {
@@ -110,7 +110,8 @@ struct FiltersTab: View {
             }
             Button("Add preset") {
                 var c = model.config
-                c.presets.append(JQLPreset(id: UUID().uuidString, name: "New preset", jql: "assignee = currentUser() AND statusCategory != Done"))
+                c.presets.append(JQLPreset(id: UUID().uuidString, name: "New preset", jql: "assignee = currentUser() AND statusCategory != Done",
+                                           accountId: model.activeAccount?.id ?? JiraAccount.defaultId))
                 model.updateConfig(c)
             }
         }
@@ -135,7 +136,7 @@ struct FiltersTab: View {
         var c = model.config
         c.presets.removeAll { $0.id == id }
         let wasActive = c.activePresetId == id
-        if wasActive { c.activePresetId = c.presets.first?.id ?? JQLPreset.myOpenWork.id }
+        if wasActive { c.activePresetId = c.presets.first?.id ?? "" }
         model.updateConfig(c)
         if wasActive { Task { await model.refresh(.manual) } }
     }
@@ -165,12 +166,11 @@ struct AxisEditor: View {
     @ObservedObject var vm: SettingsViewModel
     @State private var filter = ""
 
-    private var cfg: AxisConfig { model.config.axes[axis] }
+    private var cfg: AxisConfig { model.activeAccount?.axes[axis] ?? AxisConfig() }
 
     private func update(_ change: (inout AxisConfig) -> Void) {
-        var c = model.config
-        change(&c.axes[axis])
-        model.updateConfig(c)
+        guard let id = model.activeAccount?.id else { return }
+        model.updateAxes(accountId: id) { change(&$0[axis]) }
     }
 
     private var title: String {

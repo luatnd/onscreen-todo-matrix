@@ -17,9 +17,10 @@ final class SettingsViewModel: ObservableObject {
 
     init(model: AppModel) {
         self.model = model
-        site = model.config.site
-        email = model.config.email
-        token = model.storedToken ?? ""
+        let account = model.activeAccount
+        site = account?.site ?? ""
+        email = account?.email ?? ""
+        token = account.flatMap { model.storedToken(accountId: $0.id) } ?? ""
     }
 
     var isConnected: Bool { connectionStatus.hasPrefix("Connected as") }
@@ -27,20 +28,18 @@ final class SettingsViewModel: ObservableObject {
     func saveAndTest() async {
         busy = true
         defer { busy = false }
-        var c = model.config
-        let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        var account = model.activeAccount ?? JiraAccount(id: model.newAccountId(), name: "Personal")
+        account.site = site.trimmingCharacters(in: .whitespacesAndNewlines)
+        account.email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        c.site = site
-        c.email = email
-        model.updateConfig(c)
         do {
-            try model.setToken(token)
+            try model.saveAccount(account, token: token)
         } catch {
             connectionStatus = "Could not save token to Keychain: \(error.localizedDescription)"
             return
         }
         do {
-            let me = try await model.makeAPI().myself()
+            let me = try await model.makeAPI(accountId: account.id).myself()
             connectionStatus = "Connected as \(me.displayName)"
             await loadFields()
             await model.refresh(.manual)
@@ -50,7 +49,7 @@ final class SettingsViewModel: ObservableObject {
     }
 
     func loadFields() async {
-        guard let api = try? model.makeAPI() else { return }
+        guard let account = model.activeAccount, let api = try? model.makeAPI(accountId: account.id) else { return }
         do {
             fields = try await api.fields().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         } catch {
@@ -59,18 +58,14 @@ final class SettingsViewModel: ObservableObject {
         }
         if let p = try? await api.priorities() { priorities = p }
         if !fields.isEmpty && !isConnected { connectionStatus = "Connected" }
-        let suggested = DefaultMappings.suggest(fields: fields, current: model.config.axes)
-        if suggested != model.config.axes {
-            var c = model.config
-            c.axes = suggested
-            model.updateConfig(c)
-        }
+        let suggested = DefaultMappings.suggest(fields: fields, current: account.axes)
+        if suggested != account.axes { model.updateAxes(accountId: account.id) { $0 = suggested } }
     }
 
     func testJQL(_ preset: JQLPreset) async {
         jqlStatus[preset.id] = "Testing…"
         do {
-            let n = try await model.makeAPI().approximateCount(jql: preset.jql)
+            let n = try await model.makeAPI(accountId: preset.accountId).approximateCount(jql: preset.jql)
             jqlStatus[preset.id] = "\(n) issues match"
         } catch {
             jqlStatus[preset.id] = Self.describe(error)

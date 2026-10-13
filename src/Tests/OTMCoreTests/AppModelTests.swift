@@ -6,16 +6,16 @@ import Testing
 @Suite struct AppModelTests {
     let dir = makeTempDir()
     let api = FakeJiraAPI()
-    let tokens = InMemoryTokenStore(token: "tok")
+    let tokens = InMemoryTokenStore(tokens: ["default": "tok"])
     var clockNow = Date(timeIntervalSince1970: 1_800_000_000)
 
     func configuredConfig() -> AppConfig {
+        var axes = AxesConfig()
+        axes.value.mapping = .number(fieldId: "cf_value", min: 0, max: 10, invert: false)
+        axes.effort.mapping = .number(fieldId: "cf_sp", min: 0, max: 10, invert: false)
+        axes.urgency.mapping = .option(fieldId: "priority", levels: DefaultMappings.priorityLevels)
         var c = AppConfig()
-        c.site = "acme.atlassian.net"
-        c.email = "me@x.com"
-        c.axes.value.mapping = .number(fieldId: "cf_value", min: 0, max: 10, invert: false)
-        c.axes.effort.mapping = .number(fieldId: "cf_sp", min: 0, max: 10, invert: false)
-        c.axes.urgency.mapping = .option(fieldId: "priority", levels: DefaultMappings.priorityLevels)
+        c.accounts = [JiraAccount(id: "default", name: "Personal", site: "acme.atlassian.net", email: "me@x.com", axes: axes)]
         return c
     }
 

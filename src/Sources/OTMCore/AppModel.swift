@@ -17,8 +17,8 @@ public final class AppModel: ObservableObject {
     private let now: () -> Date
     private let calendar: Calendar
 
-    private var token: String?
-    private var tokenError = false
+    private var tokens: [String: String] = [:]
+    private var tokenErrorAccounts: Set<String> = []
     private var syncedAt: Date?
     private var banner: String?
     private var truncated: String?
@@ -43,24 +43,38 @@ public final class AppModel: ObservableObject {
         case .missing: config = AppConfig()
         case .corrupt: config = AppConfig(); configWasCorrupt = true
         }
-        do { token = try tokenStore.read() } catch { tokenError = true }
+        for account in config.accounts { loadToken(account.id) }
         if let cached = cache.load() {
             issues = cached.issues
             syncedAt = cached.fetchedAt
         }
-        if tokenError { banner = "Keychain access denied · re-enter your API token in settings" }
+        if let id = activeAccount?.id, tokenErrorAccounts.contains(id) {
+            banner = "Keychain access denied · re-enter your API token in settings"
+        }
         rebuild(previous: nil)
     }
 
-    public var storedToken: String? { token }
+    public var activeAccount: JiraAccount? { config.activeAccount }
 
-    public var isConfigured: Bool {
-        config.siteURL != nil && !config.email.isEmpty && !(token ?? "").isEmpty && config.axes.isComplete
+    public func storedToken(accountId: String) -> String? { tokens[accountId] }
+
+    /// Site, email, token and all three axes mapped.
+    public func isAccountConfigured(_ account: JiraAccount) -> Bool {
+        account.siteURL != nil && !account.email.isEmpty && !(tokens[account.id] ?? "").isEmpty && account.axes.isComplete
     }
 
-    public func makeAPI() throws -> JiraAPI {
-        guard let site = config.siteURL, !config.email.isEmpty, let token, !token.isEmpty else { throw JiraError.notConfigured }
-        return makeClient(site, config.email, token)
+    /// The active preset's account is configured (§11.7).
+    public var isConfigured: Bool { activeAccount.map(isAccountConfigured) ?? false }
+
+    /// "default" for the first account (so the pre-filled "My open work" preset belongs to it), a UUID afterwards.
+    public func newAccountId() -> String {
+        config.account(id: JiraAccount.defaultId) == nil ? JiraAccount.defaultId : UUID().uuidString
+    }
+
+    public func makeAPI(accountId: String) throws -> JiraAPI {
+        guard let account = config.account(id: accountId), let site = account.siteURL, !account.email.isEmpty,
+              let token = tokens[accountId], !token.isEmpty else { throw JiraError.notConfigured }
+        return makeClient(site, account.email, token)
     }
 
     public func refresh(_ trigger: RefreshTrigger) async {
@@ -68,11 +82,11 @@ public final class AppModel: ObservableObject {
             if trigger == .manual { rerunRequested = true }
             return
         }
-        guard isConfigured,
+        guard isConfigured, let preset = config.activePreset,
               scheduler.shouldRefresh(trigger, intervalMinutes: config.quick.refreshMinutes),
-              let api = try? makeAPI() else { return }
+              let api = try? makeAPI(accountId: preset.accountId) else { return }
         isRefreshing = true
-        await fetch(api)
+        await fetch(api, preset: preset)
         isRefreshing = false
         if rerunRequested {
             rerunRequested = false
@@ -80,10 +94,10 @@ public final class AppModel: ObservableObject {
         }
     }
 
-    private func fetch(_ api: JiraAPI) async {
+    private func fetch(_ api: JiraAPI, preset: JQLPreset) async {
         let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
         do {
-            let result = try await api.search(jql: config.activePreset.jql, fields: fetchFields(), cap: Self.issueCap)
+            let result = try await api.search(jql: preset.jql, fields: fetchFields(), cap: Self.issueCap)
             scheduler.recordSuccess()
             issues = result.issues
             let fetchedAt = now()
@@ -110,13 +124,21 @@ public final class AppModel: ObservableObject {
         scheduler.resume()
     }
 
-    public func setToken(_ newToken: String) throws {
-        try tokenStore.write(newToken)
-        token = newToken
-        tokenError = false
-        banner = nil
-        scheduler.resume()
-        rebuild(previous: nil)
+    /// Inserts or updates the account and stores its token in Keychain (token first: a Keychain error changes nothing).
+    public func saveAccount(_ account: JiraAccount, token: String) throws {
+        try tokenStore.write(token, accountId: account.id)
+        tokens[account.id] = token
+        tokenErrorAccounts.remove(account.id)
+        var c = config
+        c.upsertAccount(account)
+        updateConfig(c)
+    }
+
+    public func updateAxes(accountId: String, _ change: (inout AxesConfig) -> Void) {
+        var c = config
+        guard let i = c.accounts.firstIndex(where: { $0.id == accountId }) else { return }
+        change(&c.accounts[i].axes)
+        updateConfig(c)
     }
 
     public func setQuickSetting(key: String, value: JSONValue) {
@@ -150,7 +172,7 @@ public final class AppModel: ObservableObject {
     }
 
     public func issueURL(key: String) -> URL? {
-        config.siteURL?.appendingPathComponent("browse").appendingPathComponent(key)
+        activeAccount?.siteURL?.appendingPathComponent("browse").appendingPathComponent(key)
     }
 
     public static func bannerText(_ error: JiraError, syncedAt: Date?) -> String {
@@ -171,6 +193,16 @@ public final class AppModel: ObservableObject {
 
     // MARK: - Private
 
+    private func loadToken(_ accountId: String) {
+        do {
+            tokens[accountId] = try tokenStore.read(accountId: accountId)
+            tokenErrorAccounts.remove(accountId)
+        } catch {
+            tokens[accountId] = nil
+            tokenErrorAccounts.insert(accountId)
+        }
+    }
+
     private func persist(_ newConfig: AppConfig) {
         config = newConfig
         try? configStore.save(newConfig)
@@ -180,21 +212,22 @@ public final class AppModel: ObservableObject {
     private func fetchFields() -> [String] {
         var out = ["summary", "status", "priority", "duedate"]
         for axis in Axis.allCases {
-            if let id = config.axes[axis].mapping?.fieldId, !out.contains(id) { out.append(id) }
+            if let id = activeAccount?.axes[axis].mapping?.fieldId, !out.contains(id) { out.append(id) }
         }
         return out
     }
 
     private func rebuild(previous: [String: MappedTask]?) {
-        if let site = config.siteURL {
-            lastMapped = AxisMapper.map(issues: issues, axes: config.axes, site: site, now: now(), calendar: calendar)
+        let account = activeAccount
+        if let account, let site = account.siteURL {
+            lastMapped = AxisMapper.map(issues: issues, axes: account.axes, site: site, now: now(), calendar: calendar)
         } else {
             lastMapped = []
         }
         var unmapped: [Axis: [String]] = [:]
         var axisBanner: String?
         for axis in Axis.allCases {
-            guard let mapping = config.axes[axis].mapping else { continue }
+            guard let mapping = account?.axes[axis].mapping else { continue }
             let labels = AxisMapper.unmappedLabels(issues: issues, mapping: mapping)
             if !labels.isEmpty { unmapped[axis] = labels }
             if axisBanner == nil, !lastMapped.isEmpty, lastMapped.allSatisfy({ $0.missing[axis] }) {

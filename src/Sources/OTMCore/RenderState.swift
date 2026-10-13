@@ -63,7 +63,7 @@ public enum RenderStateBuilder {
         }
         return RenderState(tasks: rendered, view: config.view, lastView: config.lastView, settings: config.quick, status: status,
                            presets: config.presets.map { RenderPreset(id: $0.id, name: $0.name) },
-                           activePresetId: config.activePreset.id, configured: configured)
+                           activePresetId: config.activePreset?.id ?? "", configured: configured)
     }
 
     public static func encoder() -> JSONEncoder {

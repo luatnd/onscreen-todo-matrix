@@ -9,9 +9,11 @@ import Testing
 
     @Test func roundTripsConfig() throws {
         let store = ConfigStore(directory: makeTempDir().appendingPathComponent("nested"))
+        var axes = AxesConfig()
+        axes.urgency.mapping = .option(fieldId: "priority", levels: ["High": 4])
         var c = AppConfig()
-        c.site = "acme.atlassian.net"
-        c.axes.urgency.mapping = .option(fieldId: "priority", levels: ["High": 4])
+        c.accounts = [JiraAccount(id: "default", name: "Personal", site: "acme.atlassian.net", email: "me@x.com", axes: axes)]
+        c.presets.append(JQLPreset(id: "p2", name: "Company", jql: "project = C", accountId: "c1"))
         try store.save(c)
         #expect(store.load() == .loaded(c))
     }
@@ -45,18 +47,39 @@ import Testing
 }
 
 @Suite struct InMemoryTokenStoreTests {
-    @Test func writeReadDelete() throws {
+    @Test func writeReadDeletePerAccount() throws {
         let s = InMemoryTokenStore()
-        #expect(try s.read() == nil)
-        try s.write("abc")
-        #expect(try s.read() == "abc")
-        try s.delete()
-        #expect(try s.read() == nil)
+        #expect(try s.read(accountId: "default") == nil)
+        try s.write("abc", accountId: "default")
+        try s.write("xyz", accountId: "c1")
+        #expect(try s.read(accountId: "default") == "abc")
+        #expect(try s.read(accountId: "c1") == "xyz")
+        try s.delete(accountId: "default")
+        #expect(try s.read(accountId: "default") == nil)
+        #expect(try s.read(accountId: "c1") == "xyz")
+    }
+
+    @Test func legacyItemIsSeparateFromKeyedItems() throws {
+        let s = InMemoryTokenStore(legacyToken: "old")
+        #expect(try s.readLegacy() == "old")
+        #expect(try s.read(accountId: "default") == nil)
+        try s.delete(accountId: "default")
+        #expect(try s.readLegacy() == "old")
+        try s.deleteLegacy()
+        #expect(try s.readLegacy() == nil)
     }
 
     @Test func readErrorIsThrown() {
         let s = InMemoryTokenStore()
         s.readError = TokenStoreError.status(-25293)
-        #expect(throws: TokenStoreError.status(-25293)) { try s.read() }
+        #expect(throws: TokenStoreError.status(-25293)) { try s.read(accountId: "default") }
+        #expect(throws: TokenStoreError.status(-25293)) { try s.readLegacy() }
+    }
+
+    @Test func keychainItemNamesKeepV11Identifiers() {
+        #expect(KeychainTokenStore.service == "onscreen-todo-matrix")
+        #expect(KeychainTokenStore.legacyAccount == "jira-api-token")
+        #expect(KeychainTokenStore.keychainAccount(for: "default") == "jira-api-token:default")
+        #expect(KeychainTokenStore.keychainAccount(for: "c1f") == "jira-api-token:c1f")
     }
 }
