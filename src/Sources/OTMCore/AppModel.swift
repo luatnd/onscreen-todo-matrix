@@ -65,6 +65,8 @@ public final class AppModel: ObservableObject {
     private var lastMapped: [MappedTask] = []
     private var isRefreshing = false
     private var rerunRequested = false
+    /// The on-disk config.json is still v1.1 and its backup could not be made: never overwrite it.
+    private var protectUnbackedLegacyFile = false
     private var fieldNamesTried: Set<String> = []
 
     public static let issueCap = 500
@@ -92,6 +94,7 @@ public final class AppModel: ObservableObject {
         case .legacy(let c):
             config = c
             migrationFailed = !ConfigMigration.finish(c, store: configStore, tokens: tokenStore, cache: cache)
+            protectUnbackedLegacyFile = migrationFailed && !FileManager.default.fileExists(atPath: configStore.legacyBackupURL.path)
         case .missing: config = AppConfig()
         case .corrupt: config = AppConfig(); configWasCorrupt = true
         }
@@ -389,7 +392,7 @@ public final class AppModel: ObservableObject {
 
     /// Never overwrite a v1.1 config.json whose backup could not be made: keep changes in memory only.
     private func saveConfig(_ c: AppConfig) {
-        if migrationFailed && !FileManager.default.fileExists(atPath: configStore.legacyBackupURL.path) { return }
+        if protectUnbackedLegacyFile { return }
         try? configStore.save(c)
     }
 

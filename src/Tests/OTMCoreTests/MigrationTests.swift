@@ -193,6 +193,12 @@ import Testing
         #expect(m.storedToken(accountId: "default") == "legacy-tok")
         #expect((try? m.makeAPI(accountId: "default")) != nil)
         #expect(log.calls.last?.token == "legacy-tok")
+        // A healthy v1.2 install must still save settings.
+        m.setQuickSetting(key: "labelMode", value: .string("key"))
+        m.saveLastView(yaw: 10, pitch: 10, zoom: 1)
+        guard case .loaded(let saved) = ConfigStore(directory: dir).load() else { Issue.record("not saved"); return }
+        #expect(saved.quick.labelMode == "key")
+        #expect(saved.lastView?.yaw == 10)
     }
 
     @Test func v11ConfigIsNeverOverwrittenWithoutBackup() throws {
