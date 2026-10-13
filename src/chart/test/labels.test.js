@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { truncate, brightness, placeLabels, chooseCardCorner, axisTitle } from '../src/labels.js';
+import { truncate, brightness, placeLabels, chooseCardCorner, axisTitle, clampLabel } from '../src/labels.js';
 
 const measure = (s) => s.length * 6;
 const task = (key, o = {}) => ({ key, summary: `Summary ${key}`, value: 0.5, effort: 0.5, urgency: 0.5, rank: null, ...o });
@@ -82,5 +82,19 @@ describe('axisTitle', () => {
   });
   test('several fields join with " + "', () => {
     expect(axisTitle('↑ Urgency', ['Priority', 'Due date'])).toBe('↑ Urgency (Priority + Due date)');
+  });
+});
+
+describe('clampLabel', () => {
+  test('keeps wide centered text inside the canvas', () => {
+    expect(clampLabel(390, 100, 100, 400, 300)).toEqual({ x: 342, y: 100 });
+    expect(clampLabel(5, 100, 100, 400, 300)).toEqual({ x: 58, y: 100 });
+  });
+  test('left / right alignment and y clamp', () => {
+    expect(clampLabel(380, 2, 100, 400, 300, 'left')).toEqual({ x: 292, y: 12 });
+    expect(clampLabel(20, 400, 100, 400, 300, 'right')).toEqual({ x: 108, y: 288 });
+  });
+  test('inside stays put', () => {
+    expect(clampLabel(200, 100, 50, 400, 300)).toEqual({ x: 200, y: 100 });
   });
 });

@@ -1,6 +1,6 @@
 import { project } from './projection.js';
 import { taskColor } from './color.js';
-import { placeLabels, brightness, axisTitle } from './labels.js';
+import { placeLabels, brightness, axisTitle, clampLabel } from './labels.js';
 
 const ZONES = [
   [0.5, 1, 0, 0.5, 'rgba(70,180,120,.16)', 'Quick wins', true],
@@ -35,7 +35,8 @@ export function drawScene(g, o) {
   };
   const txt = (p, s, c, align = 'center') => {
     g.fillStyle = c; g.font = FONT; g.textAlign = align; g.textBaseline = 'middle';
-    g.fillText(s, Math.max(45, Math.min(w - 45, p.x)), p.y);
+    const c2 = clampLabel(p.x, p.y, g.measureText(s).width, w, h, align);
+    g.fillText(s, c2.x, c2.y);
   };
 
   for (const [x0, x1, y0, y1, fill, name, hi] of ZONES) {

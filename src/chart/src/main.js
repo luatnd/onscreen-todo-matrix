@@ -104,7 +104,11 @@ function renderChrome() {
   const lbl = buttonLabel(s);
   $('pbtn').querySelector('.dot').style.background = lbl.color || 'transparent';
   $('pbtn').querySelector('.lbl').textContent = lbl.text;
-  if (menu) drawMenu();
+  if (menu) {
+    const rows = menuRows(s, menu.filter);
+    if (!rows[menu.hi] || rows[menu.hi].kind === 'header') menu.hi = initialHighlight(rows);
+    drawMenu();
+  }
   const b = $('banner');
   const text = s.status.banner || s.status.truncated;
   b.style.display = text ? 'block' : 'none';
@@ -267,13 +271,14 @@ function drawMenu() {
       html += `<div class="${cls}" data-i="${i}"><span class="ck"></span>${escapeHTML(r.label)}</div>`;
       return;
     }
-    const warn = r.missing ? ' <span class="warn">⚠ account missing</span>' : r.error ? ' <span class="warn">⚠</span>' : '';
+    const warn = r.error ? ' <span class="warn">⚠</span>' : '';
     html += `<div class="${cls}" data-i="${i}"><span class="ck">${r.active ? '✓' : ''}</span>${escapeHTML(r.name)}${warn}<span class="sc">${r.shortcut || ''}</span></div>`;
   });
   el.innerHTML = html;
   el.style.display = 'block';
   el.querySelectorAll('[data-i]').forEach((d) => {
     d.onmousedown = (e) => e.preventDefault();
+    d.onmouseenter = () => { const i = Number(d.dataset.i); if (menu.hi !== i) { menu.hi = i; drawMenu(); } };
     d.onclick = () => runMenuAction(rowAction(rows[Number(d.dataset.i)]));
   });
   const hi = el.querySelector('.pi.hi');
@@ -297,6 +302,7 @@ $('banner').onclick = () => {
 window.addEventListener('keydown', (e) => {
   if (!st.state || document.activeElement === q) return;
   const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
+  if (menu && ['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)) return;
   if (menu && !m && !e.altKey) {
     e.preventDefault();
     const r = menuKey(st.state, menu, e.key);

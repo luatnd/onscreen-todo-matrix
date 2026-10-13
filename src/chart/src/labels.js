@@ -62,3 +62,10 @@ export function axisTitle(base, names) {
   const list = (Array.isArray(names) ? names : [names]).filter((n) => typeof n === 'string' && n.trim() !== '');
   return `${base} (${list.length ? list.join(' + ') : 'not mapped'})`;
 }
+
+/** Keep a text of `width` px fully inside [8, w-8] x [12, h-12]; x is the anchor for align 'center' | 'left' | 'right'. */
+export function clampLabel(x, y, width, w, h, align = 'center') {
+  const left = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+  const L = Math.max(8, Math.min(w - 8 - width, left));
+  return { x: align === 'center' ? L + width / 2 : align === 'right' ? L + width : L, y: Math.max(12, Math.min(h - 12, y)) };
+}
