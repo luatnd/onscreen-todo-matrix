@@ -100,11 +100,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "hide":
             panel.hide()
         case "openSettings":
-            settings.show()
+            let tab = (msg["tab"] as? String).flatMap(SettingsTab.init(rawValue:))
+            settings.show(tab: tab, accountId: tab == .accounts || tab == .axes ? model.activeAccount?.id : nil)
+        case "newPreset":
+            if model.config.accounts.isEmpty {
+                settings.show(tab: .accounts)
+            } else {
+                settings.showNewPreset(accountId: msg["accountId"] as? String)
+            }
         case "selectPreset":
-            if let id = msg["id"] as? String {
-                model.selectPreset(id: id)
-                Task { await model.refresh(.manual) }
+            guard let id = msg["id"] as? String else { break }
+            switch model.selectPreset(id: id) {
+            case .selected: Task { await model.refresh(.manual) }
+            case .accountMissing: settings.show(tab: .presets)
+            case .notFound: break
             }
         case "quickSetting":
             if let key = msg["key"] as? String { model.setQuickSetting(key: key, value: JSONValue(any: msg["value"])) }

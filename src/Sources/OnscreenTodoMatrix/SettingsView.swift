@@ -2,12 +2,12 @@ import KeyboardShortcuts
 import OTMCore
 import SwiftUI
 
-enum SettingsTab: Hashable { case connection, filters, axes, shortcuts, general }
+/// Raw values are the `tab` strings of the panel's `openSettings {tab}` message.
+enum SettingsTab: String, Hashable { case accounts, presets, axes, shortcuts, general }
 
 struct SettingsView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var vm: SettingsViewModel
-    @State var tab: SettingsTab = .connection
     let onDone: () -> Void
     /// Latched at creation so the setup header (and its Done button) survives becoming configured mid-wizard.
     @State private var wizard: Bool
@@ -22,10 +22,10 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             if wizard { setupHeader }
-            TabView(selection: $tab) {
-                ConnectionTab(vm: vm).tabItem { Text("1. Connect") }.tag(SettingsTab.connection)
-                FiltersTab(model: model, vm: vm).tabItem { Text("2. Filter") }.tag(SettingsTab.filters)
-                AxesTab(model: model, vm: vm).tabItem { Text("3. Axes") }.tag(SettingsTab.axes)
+            TabView(selection: $vm.tab) {
+                AccountsTab(model: model, vm: vm).tabItem { Text("Accounts") }.tag(SettingsTab.accounts)
+                FiltersTab(model: model, vm: vm).tabItem { Text("Presets") }.tag(SettingsTab.presets)
+                AxesTab(model: model, vm: vm).tabItem { Text("Axes") }.tag(SettingsTab.axes)
                 ShortcutsTab().tabItem { Text("Shortcuts") }.tag(SettingsTab.shortcuts)
                 GeneralTab(model: model, vm: vm).tabItem { Text("General") }.tag(SettingsTab.general)
             }
@@ -36,18 +36,18 @@ struct SettingsView: View {
 
     private var setupHeader: some View {
         HStack(spacing: 14) {
-            step("1. Connect", done: vm.isConnected || (model.activeAccount.map { model.storedToken(accountId: $0.id) != nil && $0.siteURL != nil } ?? false))
-            step("2. Filter", done: !model.config.presets.isEmpty)
+            step("1. Add account", done: model.config.accounts.contains { model.hasCredentials($0) })
+            step("2. Presets", done: model.activeAccount != nil)
             step("3. Axes", done: model.activeAccount?.axes.isComplete ?? false)
             Spacer()
-            Button(tab == .axes ? "Done · show panel" : "Next") {
-                switch tab {
-                case .connection: tab = .filters
-                case .filters: tab = .axes
+            Button(vm.tab == .axes ? "Done · show panel" : "Next") {
+                switch vm.tab {
+                case .accounts: vm.tab = .presets
+                case .presets: vm.tab = .axes
                 default: if model.isConfigured { onDone() }
                 }
             }
-            .disabled(tab == .axes && !model.isConfigured)
+            .disabled(vm.tab == .axes && !model.isConfigured)
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
         .background(Color.accentColor.opacity(0.08))
@@ -56,28 +56,6 @@ struct SettingsView: View {
     private func step(_ title: String, done: Bool) -> some View {
         Label(title, systemImage: done ? "checkmark.circle.fill" : "circle")
             .foregroundStyle(done ? .green : .secondary)
-    }
-}
-
-struct ConnectionTab: View {
-    @ObservedObject var vm: SettingsViewModel
-    var body: some View {
-        Form {
-            TextField("Jira site", text: $vm.site, prompt: Text("your-company.atlassian.net"))
-            TextField("Email", text: $vm.email)
-            SecureField("API token", text: $vm.token)
-            Link("Create an API token at id.atlassian.com", destination: URL(string: "https://id.atlassian.com/manage-profile/security/api-tokens")!)
-                .font(.caption)
-            HStack {
-                Button("Save & Test") { Task { await vm.saveAndTest() } }
-                    .disabled(vm.busy || vm.site.isEmpty || vm.email.isEmpty || vm.token.isEmpty)
-                if vm.busy { ProgressView().controlSize(.small) }
-                Text(vm.connectionStatus).foregroundStyle(vm.isConnected ? .green : .secondary)
-            }
-            Text("The API token is stored only in your macOS Keychain. The app only reads from Jira.")
-                .font(.caption).foregroundStyle(.secondary)
-        }
-        .formStyle(.grouped)
     }
 }
 

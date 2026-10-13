@@ -19,7 +19,8 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     /// Closing (X button or Done) is the single "settings finished" signal.
     func windowWillClose(_ notification: Notification) { onDone() }
 
-    func show() {
+    /// Shows Settings; `tab` / `accountId` come from the panel's `openSettings {tab}` (nil = keep the current tab).
+    func show(tab: SettingsTab? = nil, accountId: String? = nil) {
         if window == nil {
             let view = SettingsView(model: model, vm: vm) { [weak self] in
                 self?.window?.close()
@@ -32,8 +33,15 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             w.center()
             window = w
         }
+        vm.open(tab: tab, accountId: accountId)
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
         Task { await vm.loadFields() }
+    }
+
+    /// "+ New preset…" in the panel: Settings on the New preset sheet with that account pre-selected.
+    func showNewPreset(accountId: String?) {
+        show()
+        vm.openNewPreset(accountId: accountId)
     }
 }

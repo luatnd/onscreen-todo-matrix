@@ -1,75 +1,64 @@
 import Foundation
 import OTMCore
 
+/// Asks Settings to show the New preset sheet (§11.7) with this account pre-selected.
+struct NewPresetRequest: Identifiable, Equatable {
+    let id = UUID()
+    var accountId: String?
+}
+
+/// Which Settings tab / sheet is showing, set by the panel (`openSettings {tab}`, `newPreset {accountId}`)
+/// and by the tabs themselves. Each tab keeps its own form state.
 @MainActor
 final class SettingsViewModel: ObservableObject {
-    @Published var site: String
-    @Published var email: String
-    @Published var token: String
-    @Published var connectionStatus = ""
+    @Published var tab: SettingsTab = .accounts
+    /// Accounts tab: open this account's form (e.g. from "Jira sign-in failed (Company) · Open settings").
+    @Published var editAccountId: String?
+    /// Axes tab: the account being mapped (nil = the active preset's account).
+    @Published var axesAccountId: String?
+    /// Non-nil while the New preset sheet is shown.
+    @Published var newPreset: NewPresetRequest?
+    @Published var generalError = ""
+
+    // Used by the v1.1 Filters and Axes tabs until Tasks 9 and 10 replace them.
     @Published var fields: [JiraField] = []
     @Published var priorities: [String] = []
     @Published var jqlStatus: [String: String] = [:]
-    @Published var generalError = ""
-    @Published var busy = false
 
     let model: AppModel
 
     init(model: AppModel) {
         self.model = model
-        let account = model.activeAccount
-        site = account?.site ?? ""
-        email = account?.email ?? ""
-        token = account.flatMap { model.storedToken(accountId: $0.id) } ?? ""
     }
 
-    var isConnected: Bool { connectionStatus.hasPrefix("Connected as") }
+    /// Routes an `openSettings {tab}` request. `accountId` selects the account for the Accounts/Axes tabs.
+    func open(tab: SettingsTab?, accountId: String?) {
+        guard let tab else { return }
+        self.tab = tab
+        switch tab {
+        case .accounts: editAccountId = accountId
+        case .axes: axesAccountId = accountId ?? axesAccountId
+        default: break
+        }
+    }
 
-    func saveAndTest() async {
-        busy = true
-        defer { busy = false }
-        var account = model.activeAccount ?? JiraAccount(id: model.newAccountId(), name: "Personal")
-        account.site = site.trimmingCharacters(in: .whitespacesAndNewlines)
-        account.email = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        let token = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        do {
-            try model.saveAccount(account, token: token)
-        } catch {
-            connectionStatus = "Could not save token to Keychain: \(error.localizedDescription)"
-            return
-        }
-        do {
-            let me = try await model.makeAPI(accountId: account.id).myself()
-            connectionStatus = "Connected as \(me.displayName)"
-            await loadFields()
-            await model.refresh(.manual)
-        } catch {
-            connectionStatus = Self.describe(error)
-        }
+    func openNewPreset(accountId: String?) {
+        tab = .presets
+        newPreset = NewPresetRequest(accountId: accountId)
     }
 
     func loadFields() async {
         guard let account = model.activeAccount, let api = try? model.makeAPI(accountId: account.id) else { return }
-        do {
-            fields = try await api.fields().sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        } catch {
-            connectionStatus = Self.describe(error)
-            return
-        }
+        guard let loaded = try? await api.fields() else { return }
+        fields = loaded.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         if let p = try? await api.priorities() { priorities = p }
-        if !fields.isEmpty && !isConnected { connectionStatus = "Connected" }
         let suggested = DefaultMappings.suggest(fields: fields, current: account.axes)
         if suggested != account.axes { model.updateAxes(accountId: account.id) { $0 = suggested } }
     }
 
     func testJQL(_ preset: JQLPreset) async {
         jqlStatus[preset.id] = "Testing…"
-        do {
-            let n = try await model.makeAPI(accountId: preset.accountId).approximateCount(jql: preset.jql)
-            jqlStatus[preset.id] = "\(n) issues match"
-        } catch {
-            jqlStatus[preset.id] = Self.describe(error)
-        }
+        jqlStatus[preset.id] = await model.testJQL(preset.jql, accountId: preset.accountId).text
     }
 
     /// Values offered in the option-level editor.
