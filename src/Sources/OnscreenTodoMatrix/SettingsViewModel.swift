@@ -20,10 +20,6 @@ final class SettingsViewModel: ObservableObject {
     @Published var newPreset: NewPresetRequest?
     @Published var generalError = ""
 
-    // Used by the v1.1 Axes tab until Task 10 replaces it.
-    @Published var fields: [JiraField] = []
-    @Published var priorities: [String] = []
-
     let model: AppModel
 
     init(model: AppModel) {
@@ -46,38 +42,19 @@ final class SettingsViewModel: ObservableObject {
         newPreset = NewPresetRequest(accountId: accountId)
     }
 
-    /// Loads fields/priorities and applies the suggested mapping for `accountId` (default: the active account).
-    func loadFields(accountId: String? = nil) async {
-        guard let account = accountId.flatMap({ model.config.account(id: $0) }) ?? model.activeAccount,
-              let api = try? model.makeAPI(accountId: account.id) else { return }
-        guard let loaded = try? await api.fields() else { return }
+    /// Loads one account's fields + priorities and pre-fills its empty axes (DefaultMappings.suggest).
+    /// Used by the Axes tab and by Accounts "Save & Test" (auto-map).
+    func fetchFields(accountId: String) async throws -> (fields: [JiraField], priorities: [String]) {
+        let api = try model.makeAPI(accountId: accountId)
+        let loaded = try await api.fields()
         let sorted = loaded.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        let loadedPriorities = try? await api.priorities()
-        // The Axes tab edits the active account, so only its fields feed the shared lists.
-        if account.id == model.activeAccount?.id {
-            fields = sorted
-            if let p = loadedPriorities { priorities = p }
-        }
+        let priorities = (try? await api.priorities()) ?? []
         // Re-read after the awaits so edits made during the network calls aren't overwritten.
-        guard let current = model.config.account(id: account.id) else { return }
-        let suggested = DefaultMappings.suggest(fields: sorted, current: current.axes)
-        if suggested != current.axes { model.updateAxes(accountId: account.id) { $0 = suggested } }
-    }
-
-    /// Values offered in the option-level editor.
-    func optionValues(for mapping: AxisMapping) -> [String] {
-        guard case .option(let fieldId, let levels) = mapping else { return [] }
-        var values = fieldId == "priority" && !priorities.isEmpty
-            ? priorities : AxisMapper.observedLabels(fieldId: fieldId, issues: model.issues)
-        for key in levels.keys.sorted() where !values.contains(key) { values.append(key) }
-        return values
-    }
-
-    func usableFields(matching filter: String) -> [JiraField] {
-        fields.filter {
-            FieldClassifier.kind(of: $0) != .unsupported
-                && (filter.isEmpty || $0.name.localizedCaseInsensitiveContains(filter) || $0.id.localizedCaseInsensitiveContains(filter))
+        if let current = model.config.account(id: accountId) {
+            let suggested = DefaultMappings.suggest(fields: sorted, current: current.axes)
+            if suggested != current.axes { model.updateAxes(accountId: accountId) { $0 = suggested } }
         }
+        return (sorted, priorities)
     }
 
     static func describe(_ error: Error) -> String {

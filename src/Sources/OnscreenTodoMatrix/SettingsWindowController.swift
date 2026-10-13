@@ -36,7 +36,6 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         vm.open(tab: tab, accountId: accountId)
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
-        Task { await vm.loadFields() }
     }
 
     /// "+ New preset…" in the panel: Settings on the New preset sheet with that account pre-selected.

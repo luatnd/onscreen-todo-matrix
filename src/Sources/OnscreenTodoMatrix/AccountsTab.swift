@@ -182,7 +182,7 @@ struct AccountsTab: View {
             draft = nil
             vm.editAccountId = nil
             formMessage = ""
-            await vm.loadFields(accountId: id) // auto-map this account's axes, as in v1.1
+            _ = try? await vm.fetchFields(accountId: id) // auto-map this account's axes, as in v1.1
             if model.activeAccount?.id == id { await model.refresh(.manual) }
         } catch {
             formMessage = SettingsViewModel.describe(error)
