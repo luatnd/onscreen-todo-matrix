@@ -17,6 +17,7 @@
       "score": 0.7, "rank": null, "fire": false, "changed": false }
   ],
   "view": { "yaw": -179.7, "pitch": 33.9, "zoom": 1 },
+  "lastView": { "yaw": -150, "pitch": 30, "zoom": 1.2 },
   "settings": { "labelMode": "smart", "stemStyle": "dotted", "stemOpacity": 30, "colorMode": "rgb", "grid": true,
                 "zoneNames": true, "rotation": "limited", "panelOpacity": 100, "alwaysOnTop": false, "refreshMinutes": 5 },
   "status": { "syncedAt": "2026-10-12T10:42:00Z", "banner": null, "truncated": null },

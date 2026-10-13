@@ -377,6 +377,7 @@ TDD per AGENTS.md (`test-driven-development` skill), code review (`requesting-co
 | D15 | **Idea folder `productivity/onscreen-todo-matrix/`** | `tools/`, `personal/` | New top-level category | Existing categories (`ai/`, `infra/`, `auto-earning/`) don't fit; user approved |
 | D16 | **Brand name "Glance — Onscreen Todo Matrix"** | Trifocal, Priority Prism, Lumen | 'Glance' is generic and may clash with other apps | User's choice; says the app's purpose (2-second look); internal identifiers unchanged so existing config/token carry over |
 | D17 | **Always-on-top off by default** | Always on top by default (original §4.2) | Panel can be covered by other apps | User request: hotkey brings it to front; clicking another app puts that app on top; opt-in toggle kept in quick settings |
+| D18 | **Restore last view on launch** | Always start at saved default | Extra config write per view change (debounced 500 ms) | User request: use the last setting on initial load; lastView optional for backward-compatible config |
 
 ---
 

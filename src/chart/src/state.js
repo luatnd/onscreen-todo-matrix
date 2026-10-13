@@ -15,6 +15,10 @@ export function validateState(s) {
   });
   if (!isObj(s.view)) e.push('view missing');
   else for (const k of ['yaw', 'pitch', 'zoom']) if (typeof s.view[k] !== 'number') e.push(`view.${k} must be a number`);
+  if (s.lastView != null) {
+    if (!isObj(s.lastView)) e.push('lastView must be an object');
+    else for (const k of ['yaw', 'pitch', 'zoom']) if (typeof s.lastView[k] !== 'number') e.push(`lastView.${k} must be a number`);
+  }
   if (!isObj(s.settings)) e.push('settings missing');
   if (!isObj(s.status)) e.push('status missing');
   if (!Array.isArray(s.presets)) e.push('presets must be an array');

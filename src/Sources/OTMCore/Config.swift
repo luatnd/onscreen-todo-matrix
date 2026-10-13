@@ -69,6 +69,8 @@ public struct AppConfig: Codable, Equatable, Sendable {
     public var activePresetId = JQLPreset.myOpenWork.id
     public var axes = AxesConfig()
     public var view = ViewDefaults()
+    /// Last camera view, restored on launch. Optional so config files written before this key still decode.
+    public var lastView: ViewDefaults? = nil
     public var quick = QuickSettings()
     public var launchAtLogin = false
     public init() {}

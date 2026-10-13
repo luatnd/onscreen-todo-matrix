@@ -36,13 +36,14 @@ public struct RenderPreset: Codable, Equatable, Sendable {
 public struct RenderState: Codable, Equatable, Sendable {
     public var tasks: [RenderTask]
     public var view: ViewDefaults
+    public var lastView: ViewDefaults?
     public var settings: QuickSettings
     public var status: RenderStatus
     public var presets: [RenderPreset]
     public var activePresetId: String
     public var configured: Bool
 
-    public static let empty = RenderState(tasks: [], view: ViewDefaults(), settings: QuickSettings(),
+    public static let empty = RenderState(tasks: [], view: ViewDefaults(), lastView: nil, settings: QuickSettings(),
                                           status: RenderStatus(), presets: [], activePresetId: "", configured: false)
 }
 
@@ -60,7 +61,7 @@ public enum RenderStateBuilder {
                               url: t.url, value: t.value, effort: t.effort, urgency: t.urgency, missing: t.missing,
                               score: s.score, rank: s.rank, fire: s.fire, changed: changed)
         }
-        return RenderState(tasks: rendered, view: config.view, settings: config.quick, status: status,
+        return RenderState(tasks: rendered, view: config.view, lastView: config.lastView, settings: config.quick, status: status,
                            presets: config.presets.map { RenderPreset(id: $0.id, name: $0.name) },
                            activePresetId: config.activePreset.id, configured: configured)
     }

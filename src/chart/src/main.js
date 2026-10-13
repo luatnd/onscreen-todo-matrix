@@ -16,6 +16,15 @@ const st = {
 const cv = $('cv');
 let g, w = 0, h = 0, raf = 0;
 
+let lastViewTimer = 0;
+const saveLastViewSoon = () => {
+  clearTimeout(lastViewTimer);
+  lastViewTimer = setTimeout(() => {
+    if (drag) return;
+    post({ type: 'saveLastView', yaw: normalizeYaw(st.yaw), pitch: st.pitch, zoom: st.zoom });
+  }, 500);
+};
+
 const S = () => st.state.settings;
 const def = () => ({ yaw: st.state.view.yaw, pitch: st.state.view.pitch });
 const cam = () => ({ yaw: st.yaw, pitch: st.pitch, ...DEFAULT_CAMERA, fit: st.fit });
@@ -71,7 +80,7 @@ function render(state) {
   if (errs.length) { post({ type: 'log', level: 'error', msg: `invalid state: ${errs.join('; ')}` }); return; }
   const prev = new Map(st.tasks.map((t) => [t.key, t]));
   st.state = state;
-  if (!st.viewInit) { st.yaw = state.view.yaw; st.pitch = state.view.pitch; st.zoom = state.view.zoom; st.viewInit = true; }
+  if (!st.viewInit) { const v0 = state.lastView ?? state.view; st.yaw = v0.yaw; st.pitch = v0.pitch; st.zoom = v0.zoom; st.viewInit = true; }
   const v = clampView(st.yaw, st.pitch, def(), state.settings.rotation === 'free');
   st.yaw = v.yaw; st.pitch = v.pitch;
   st.tasks = state.tasks;
@@ -201,7 +210,7 @@ function setSetting(key, value) {
   st.state.settings = { ...S(), [key]: value };
   post({ type: 'quickSetting', key, value });
   if (key === 'rotation') {
-    const v = clampView(st.yaw, st.pitch, def(), value === 'free'); st.yaw = v.yaw; st.pitch = v.pitch; refitAnimated();
+    const v = clampView(st.yaw, st.pitch, def(), value === 'free'); st.yaw = v.yaw; st.pitch = v.pitch; refitAnimated(); saveLastViewSoon();
   }
   syncQS(); draw();
 }
@@ -209,7 +218,7 @@ const parseSeg = (key, v) => (['grid', 'zoneNames', 'alwaysOnTop'].includes(key)
 qs.querySelectorAll('.seg b').forEach((b) => { b.onclick = () => setSetting(b.parentNode.dataset.k, parseSeg(b.parentNode.dataset.k, b.dataset.v)); });
 qs.querySelectorAll('input[type=range]').forEach((i) => {
   i.oninput = () => {
-    if (i.dataset.k === 'zoom') { st.zoom = Number(i.value) / 100; refitNow(); draw(); return; }
+    if (i.dataset.k === 'zoom') { st.zoom = Number(i.value) / 100; refitNow(); draw(); saveLastViewSoon(); return; }
     setSetting(i.dataset.k, Number(i.value));
   };
 });
@@ -276,13 +285,13 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', (e) => {
   if (!drag) return;
   const d = drag; drag = null;
-  if (d.moved) return refitAnimated();
+  if (d.moved) { saveLastViewSoon(); return refitAnimated(); }
   if (e.target === cv) { const m = hit(e); select(m ? m.t.key : null); }
 });
-function resetView() { if (!st.state || atDefault()) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); toast('View reset'); }
+function resetView() { if (!st.state || atDefault()) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); saveLastViewSoon(); toast('View reset'); }
 cv.addEventListener('dblclick', resetView);
 $('bReset').addEventListener('click', resetView);
-cv.addEventListener('wheel', (e) => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * Math.exp(-e.deltaY * 0.0015))); refitNow(); draw(); syncQS(); }, { passive: false });
+cv.addEventListener('wheel', (e) => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * Math.exp(-e.deltaY * 0.0015))); refitNow(); draw(); syncQS(); saveLastViewSoon(); }, { passive: false });
 cv.addEventListener('mousemove', (e) => {
   const tip = $('tip');
   if (drag) { tip.style.display = 'none'; return; }

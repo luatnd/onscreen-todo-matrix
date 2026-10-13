@@ -113,6 +113,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                yaw.isFinite, pitch.isFinite, zoom.isFinite {
                 model.saveDefaultView(yaw: yaw, pitch: pitch, zoom: zoom)
             }
+        case "saveLastView":
+            if let yaw = msg["yaw"] as? Double, let pitch = msg["pitch"] as? Double, let zoom = msg["zoom"] as? Double,
+               yaw.isFinite, pitch.isFinite, zoom.isFinite {
+                model.saveLastView(yaw: yaw, pitch: pitch, zoom: zoom)
+            }
         default:
             break
         }

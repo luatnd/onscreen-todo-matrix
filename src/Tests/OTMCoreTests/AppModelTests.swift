@@ -140,6 +140,28 @@ import Testing
         #expect(m.renderState.settings.labelMode == "key")
     }
 
+    @Test func lastViewPersistsNormalizedWithoutRerender() {
+        let m = makeModel(config: configuredConfig())
+        let before = m.renderState
+        m.saveLastView(yaw: -539.7, pitch: 95, zoom: 9)
+        guard case .loaded(let saved) = ConfigStore(directory: dir).load() else { Issue.record("not saved"); return }
+        #expect(abs(saved.lastView!.yaw - -179.7) < 1e-9)
+        #expect(saved.lastView!.pitch == 89)
+        #expect(saved.lastView!.zoom == 3)
+        #expect(saved.view == ViewDefaults())
+        #expect(m.renderState == before)
+        m.saveLastView(yaw: .nan, pitch: 0, zoom: 1)
+        m.saveLastView(yaw: 0, pitch: .infinity, zoom: 1)
+        #expect(m.config.lastView == saved.lastView)
+    }
+
+    @Test func configWithoutLastViewStillDecodes() throws {
+        var obj = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(AppConfig())) as? [String: Any])
+        obj.removeValue(forKey: "lastView")
+        let c = try JSONDecoder().decode(AppConfig.self, from: JSONSerialization.data(withJSONObject: obj))
+        #expect(c.lastView == nil)
+    }
+
     @Test func corruptConfigIsFlagged() throws {
         try Data("{oops".utf8).write(to: ConfigStore(directory: dir).url)
         let m = makeModel()

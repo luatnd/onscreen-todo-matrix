@@ -14,3 +14,11 @@ test('detects broken payloads', () => {
   expect(errs).toContain('tasks[0].value must be a number in 0..1');
   expect(errs).toContain('settings missing');
 });
+test('lastView is optional but must be numeric when present', () => {
+  const ok = structuredClone(fixture);
+  delete ok.lastView;
+  expect(validateState(ok)).toEqual([]);
+  const bad = structuredClone(fixture);
+  bad.lastView.yaw = 'x';
+  expect(validateState(bad)).toContain('lastView.yaw must be a number');
+});

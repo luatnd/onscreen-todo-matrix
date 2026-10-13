@@ -132,6 +132,16 @@ public final class AppModel: ObservableObject {
         persist(c)
     }
 
+    /// Persists the live camera view (restored on launch). Deliberately no rebuild: the chart already shows it.
+    public func saveLastView(yaw: Double, pitch: Double, zoom: Double) {
+        guard yaw.isFinite, pitch.isFinite, zoom.isFinite else { return }
+        let normalizedYaw = (((yaw + 180).truncatingRemainder(dividingBy: 360)) + 360).truncatingRemainder(dividingBy: 360) - 180
+        var c = config
+        c.lastView = ViewDefaults(yaw: normalizedYaw, pitch: min(89, max(-89, pitch)), zoom: min(3, max(0.5, zoom)))
+        config = c
+        try? configStore.save(c)
+    }
+
     public func selectPreset(id: String) {
         guard config.presets.contains(where: { $0.id == id }) else { return }
         var c = config
