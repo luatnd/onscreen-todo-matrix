@@ -63,7 +63,9 @@ final class PanelController: NSObject, NSWindowDelegate {
     }
 
     func show() {
+        NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
+        panel.orderFrontRegardless()
         panel.makeFirstResponder(chart.webView)
     }
 

@@ -144,7 +144,7 @@ Each task is a dot floating above its (value, effort) position on the floor; hei
 | Selection | Blue ring `#3b82f6`, width 2.5, radius `r + 4` |
 
 ### 4.2 Window form: floating panel (option A)
-- Resizable floating panel (NSPanel), **always on top** (toggleable), stays open while you work beside it.
+- Resizable floating panel (NSPanel), brought to front by the hotkey; optional **always-on-top** (off by default), stays open while you work beside it.
 - **Global hotkey ⌥Space** shows/hides it (rebindable).
 - Panel opacity adjustable 40–100% (the desktop shows through).
 - Remembers size and position.
@@ -376,6 +376,7 @@ TDD per AGENTS.md (`test-driven-development` skill), code review (`requesting-co
 | D14 | **Swift (SwiftUI + AppKit) + WKWebView chart** | Go + Wails v3 (pinned v3.0.0-beta.28); Tauri v2 (Rust); Electron | Wails: Go preference fits and covers hotkey/NSPanel/tray, but v3 is pre-release and opacity + launch-at-login need cgo glue. Tauri: mature but Rust, NSPanel via community plugin. Electron: 150+ MB. Swift: not Go, second toolchain | The app is mostly macOS integration with a tiny back end, so Go's strengths go unused; Swift has every requirement first-party, no beta risk, smallest footprint; chart JS reused unchanged. Confirmed by the user per the AGENTS.md "confirm non-Go" rule |
 | D15 | **Idea folder `productivity/onscreen-todo-matrix/`** | `tools/`, `personal/` | New top-level category | Existing categories (`ai/`, `infra/`, `auto-earning/`) don't fit; user approved |
 | D16 | **Brand name "Glance — Onscreen Todo Matrix"** | Trifocal, Priority Prism, Lumen | 'Glance' is generic and may clash with other apps | User's choice; says the app's purpose (2-second look); internal identifiers unchanged so existing config/token carry over |
+| D17 | **Always-on-top off by default** | Always on top by default (original §4.2) | Panel can be covered by other apps | User request: hotkey brings it to front; clicking another app puts that app on top; opt-in toggle kept in quick settings |
 
 ---
 

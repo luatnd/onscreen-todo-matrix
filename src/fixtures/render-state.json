@@ -18,7 +18,7 @@
   ],
   "view": { "yaw": -179.7, "pitch": 33.9, "zoom": 1 },
   "settings": { "labelMode": "smart", "stemStyle": "dotted", "stemOpacity": 30, "colorMode": "rgb", "grid": true,
-                "zoneNames": true, "rotation": "limited", "panelOpacity": 100, "alwaysOnTop": true, "refreshMinutes": 5 },
+                "zoneNames": true, "rotation": "limited", "panelOpacity": 100, "alwaysOnTop": false, "refreshMinutes": 5 },
   "status": { "syncedAt": "2026-10-12T10:42:00Z", "banner": null, "truncated": null },
   "presets": [ { "id": "my-open-work", "name": "My open work" } ],
   "activePresetId": "my-open-work",

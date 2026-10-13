@@ -7,7 +7,7 @@ Run after `./scripts/build-app.sh` and `open "build/Glance.app"`.
 - [ ] ⌥Space toggles the panel from another app (e.g. while typing in an editor); keyboard focus lands in the panel.
 - [ ] Tab / ⇧Tab cycle tasks; ⌘O opens the issue in the default browser; Esc deselects then hides.
 - [ ] ⌘R refetches; returning focus to the panel after >30 s refetches (watch "synced …").
-- [ ] Quick settings (Q): panel opacity 40% shows the desktop through; Always on top Off lets other windows cover it.
+- [ ] ⌥Space brings the panel to the front with focus; clicking another app puts that app on top of the panel; ⌥Space again (panel in front) hides it; Quick settings → Always on top On keeps it above other apps.
 - [ ] Panel appears on every Space and over a full-screen app.
 - [ ] Panel size/position persist across relaunch.
 - [ ] Settings → Shortcuts: recording a new shortcut works and ⌥Space stops working.

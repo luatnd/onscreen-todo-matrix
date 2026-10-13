@@ -36,7 +36,7 @@ public struct QuickSettings: Codable, Equatable, Sendable {
     public var zoneNames = true
     public var rotation = "limited"       // limited | free
     public var panelOpacity: Double = 100 // 40…100
-    public var alwaysOnTop = true
+    public var alwaysOnTop = false
     public var refreshMinutes = 5         // 0 (off) | 1 | 5 | 15
     public init() {}
 

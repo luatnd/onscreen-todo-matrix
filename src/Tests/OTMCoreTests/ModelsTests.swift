@@ -79,7 +79,7 @@ import Testing
         #expect(c.quick.stemStyle == "dotted")
         #expect(c.quick.stemOpacity == 30)
         #expect(c.quick.refreshMinutes == 5)
-        #expect(c.quick.alwaysOnTop)
+        #expect(!c.quick.alwaysOnTop)
     }
 
     @Test(arguments: [
