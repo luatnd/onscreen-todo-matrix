@@ -1,6 +1,6 @@
 import { project } from './projection.js';
 import { taskColor } from './color.js';
-import { placeLabels, brightness } from './labels.js';
+import { placeLabels, brightness, axisTitle } from './labels.js';
 
 const ZONES = [
   [0.5, 1, 0, 0.5, 'rgba(70,180,120,.16)', 'Quick wins', true],
@@ -13,7 +13,8 @@ const FONT = '11px -apple-system, BlinkMacSystemFont, sans-serif';
 
 /**
  * Draws the whole scene and returns hit-test data.
- * o = { w, h, tasks, cam, settings, selectedKey, matches(task) -> bool, pulses: Map<key, startMs>, now }
+ * o = { w, h, tasks, cam, settings, selectedKey, matches(task) -> bool, pulses: Map<key, startMs>, now,
+ *       axisLabels: { value?, effort?, urgency? } (mapped field names) }
  * returns { proj: [{t, p, f, r, fade}], labels: [{item, rect, text}], hidden }
  */
 export function drawScene(g, o) {
@@ -52,9 +53,10 @@ export function drawScene(g, o) {
   line(O, P(1, 1, 0), 'rgba(90,140,255,.85)', 2);
   line(O, P(0, 0, 0), 'rgba(80,220,120,.85)', 2);
   line(O, P(0, 1, 1), 'rgba(255,80,80,.85)', 2);
-  txt(P(1.12, 1, 0), 'Value', '#7aa2ff');
-  txt(P(0, -0.14, 0), '← Less effort', '#6ee08f');
-  txt(P(0, 1, 1.1), '↑ Urgency', '#ff7070');
+  const AL = o.axisLabels || {};
+  txt(P(1.12, 1, 0), axisTitle('Value', AL.value), '#7aa2ff');
+  txt(P(0, -0.14, 0), axisTitle('← Less effort', AL.effort), '#6ee08f');
+  txt(P(0, 1, 1.1), axisTitle('↑ Urgency', AL.urgency), '#ff7070');
 
   const proj = o.tasks
     .map((t) => ({ t, p: P(t.value, t.effort, t.urgency), f: P(t.value, t.effort, 0) }))

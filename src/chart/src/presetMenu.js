@@ -29,7 +29,8 @@ export function newPresetAccountId(state) {
 
 /**
  * Rows to draw, top to bottom:
- *   { kind: 'header', account }                                  one per account that has visible presets
+ *   { kind: 'header', account, missing }                         one per account that has visible presets (account null +
+ *                                                                  missing for the "⚠ Account missing" group)
  *   { kind: 'preset', id, name, shortcut, active, missing, error }
  *   { kind: 'action', id: NEW | MANAGE, label }                   always last, also when nothing matches
  * `filter` keeps presets whose name contains it (case-insensitive). Shortcut labels follow the
@@ -45,7 +46,7 @@ export function menuRows(state, filter = '') {
     const account = byId.get(p.accountId) || null;
     const g = account ? account.id : null;
     if (g !== group) {
-      if (account) rows.push({ kind: 'header', account });
+      rows.push({ kind: 'header', account, missing: !account });
       group = g;
     }
     rows.push({

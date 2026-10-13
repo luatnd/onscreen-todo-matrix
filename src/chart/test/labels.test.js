@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { truncate, brightness, placeLabels, chooseCardCorner } from '../src/labels.js';
+import { truncate, brightness, placeLabels, chooseCardCorner, axisTitle } from '../src/labels.js';
 
 const measure = (s) => s.length * 6;
 const task = (key, o = {}) => ({ key, summary: `Summary ${key}`, value: 0.5, effort: 0.5, urgency: 0.5, rank: null, ...o });
@@ -66,5 +66,21 @@ describe('chooseCardCorner', () => {
     const obstacles = [{ x: 10, y: 10, w: 50, h: 20 }, { x: 400, y: 20, w: 50, h: 20 }];
     const c = chooseCardCorner(obstacles, { x: 300, y: 200 }, 600, 400, 230, 120);
     expect(c).toEqual({ x: 600 - 230 - 8, y: 400 - 120 - 8 });
+  });
+});
+
+describe('axisTitle', () => {
+  test('appends the mapped field name', () => {
+    expect(axisTitle('↑ Urgency', 'Priority')).toBe('↑ Urgency (Priority)');
+    expect(axisTitle('Value', 'Business Value')).toBe('Value (Business Value)');
+    expect(axisTitle('← Less effort', 'Story Points')).toBe('← Less effort (Story Points)');
+  });
+  test('unmapped → (not mapped)', () => {
+    expect(axisTitle('Value', undefined)).toBe('Value (not mapped)');
+    expect(axisTitle('Value', '  ')).toBe('Value (not mapped)');
+    expect(axisTitle('Value', [])).toBe('Value (not mapped)');
+  });
+  test('several fields join with " + "', () => {
+    expect(axisTitle('↑ Urgency', ['Priority', 'Due date'])).toBe('↑ Urgency (Priority + Due date)');
   });
 });

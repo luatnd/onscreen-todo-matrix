@@ -18,7 +18,7 @@ const state = () => ({
   ],
   activePresetId: 'mine',
 });
-const ids = (rows) => rows.map((r) => (r.kind === 'header' ? `#${r.account.name}` : r.id));
+const ids = (rows) => rows.map((r) => (r.kind === 'header' ? `#${r.account ? r.account.name : 'missing'}` : r.id));
 
 describe('grouping and ordering', () => {
   test('presets are grouped by account order, missing-account presets last', () => {
@@ -26,13 +26,18 @@ describe('grouping and ordering', () => {
   });
   test('rows: account headers, presets with ⌘ shortcuts, then the two actions', () => {
     const rows = menuRows(state());
-    expect(ids(rows)).toEqual(['#Personal', 'mine', 'due', '#Company', 'team', 'cw', 'orphan', NEW, MANAGE]);
+    expect(ids(rows)).toEqual(['#Personal', 'mine', 'due', '#Company', 'team', 'cw', '#missing', 'orphan', NEW, MANAGE]);
     const byId = Object.fromEntries(rows.filter((r) => r.kind === 'preset').map((r) => [r.id, r]));
     expect(byId.mine).toMatchObject({ shortcut: '⌘1', active: true, missing: false, error: false });
     expect(byId.team).toMatchObject({ shortcut: '⌘3', error: true });
     expect(byId.orphan).toMatchObject({ shortcut: '⌘5', missing: true });
     expect(rows.at(-2)).toEqual({ kind: 'action', id: NEW, label: '+ New preset…' });
     expect(rows.at(-1)).toEqual({ kind: 'action', id: MANAGE, label: '⚙ Manage presets…' });
+  });
+  test('presets whose account is missing get their own header row', () => {
+    const h = menuRows(state()).filter((r) => r.kind === 'header');
+    expect(h.map((r) => r.missing)).toEqual([false, false, true]);
+    expect(h[2].account).toBeNull();
   });
   test('no presets: only the actions', () => {
     expect(ids(menuRows({ ...state(), presets: [] }))).toEqual([NEW, MANAGE]);

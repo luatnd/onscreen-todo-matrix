@@ -53,3 +53,12 @@ export function chooseCardCorner(obstacles, point, w, h, cw, ch, pad = 8) {
   }
   return best;
 }
+
+/**
+ * Axis label with the mapped Jira field name(s) (spec §11.8.1): axisTitle('↑ Urgency', 'Priority') → "↑ Urgency (Priority)".
+ * `names` is a string or an array (several fields join with " + "); nothing usable → "(not mapped)".
+ */
+export function axisTitle(base, names) {
+  const list = (Array.isArray(names) ? names : [names]).filter((n) => typeof n === 'string' && n.trim() !== '');
+  return `${base} (${list.length ? list.join(' + ') : 'not mapped'})`;
+}
