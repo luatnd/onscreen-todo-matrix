@@ -17,3 +17,4 @@ Run after `./scripts/build-app.sh` and `open "build/Glance.app"`.
 - [ ] Paste the API token with ⌘V in Settings → Connect (also ⌘A / ⌘C / ⌘Z work in text fields).
 - [ ] First run ends with the panel showing real issues after closing Settings / pressing Done.
 - [ ] Dragging a file onto the panel does not navigate away.
+- [ ] First launch opens the panel at about 75% of the screen, centered.

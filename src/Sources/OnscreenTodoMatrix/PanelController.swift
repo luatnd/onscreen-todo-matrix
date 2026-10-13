@@ -30,14 +30,25 @@ final class PanelController: NSObject, NSWindowDelegate {
         panel.minSize = NSSize(width: 420, height: 320)
         panel.contentView = chart.webView
         panel.delegate = self
-        if !panel.setFrameUsingName("OTMPanel") { panel.center() }
-        panel.setFrameAutosaveName("OTMPanel")
+        if !panel.setFrameUsingName("GlancePanel") {
+            let visible = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
+            if let visible { panel.setFrame(Self.defaultFrame(in: visible, minSize: panel.minSize), display: false) }
+            else { panel.center() }
+        }
+        panel.setFrameAutosaveName("GlancePanel")
         model.$renderState
             .sink { [weak self] state in
                 self?.chart.render(state)
                 self?.apply(state.settings)
             }
             .store(in: &bag)
+    }
+
+    /// 75% of the visible frame, centered, never below minSize.
+    static func defaultFrame(in visible: NSRect, minSize: NSSize) -> NSRect {
+        let w = max(minSize.width, (visible.width * 0.75).rounded())
+        let h = max(minSize.height, (visible.height * 0.75).rounded())
+        return NSRect(x: visible.midX - w / 2, y: visible.midY - h / 2, width: w, height: h).integral
     }
 
     private func apply(_ q: QuickSettings) {
