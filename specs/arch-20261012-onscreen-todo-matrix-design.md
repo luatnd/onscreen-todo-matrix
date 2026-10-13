@@ -128,13 +128,15 @@ Each task is a dot floating above its (value, effort) position on the floor; hei
 | Default camera | **yaw −179.7°, pitch 33.9°** (user-chosen; equivalent to the −539.7° the user found while free-rotating). Yaw is displayed normalized to ±180°. |
 | Origin | The "not worth it" corner (value 0, effort high, urgency 0) sits at the back of the scene |
 | Axis lines | From the origin: Value = blue `rgba(90,140,255,.85)`, Effort/ease = green `rgba(80,220,120,.85)`, Urgency = red `rgba(255,80,80,.85)`, width 2 |
+| Axis cones | A 3D cone at the tip of each axis, pointing away from the origin O (D20): length 0.06, radius 0.016 (floor units; 0.022 was too stubby in the visual check; built in render space so the urgency `H` scale does not squash it), 16 base segments, projected and filled with the axis color; the base disc is drawn darker when it faces the viewer. Effort's cone points toward **less effort** (the line runs from O at effort 1 to effort 0, matching "← Less effort"). Axis names are placed on screen just beyond each apex along the axis direction; if that would leave the canvas, beside the cone on the side away from its line (labels replaced the fixed positions Value 1.12, Effort −0.14, Urgency 1.1). Cone boxes are label obstacles |
 | Grid | 10×10, `rgba(255,255,255,.10)`; the 0.5 quadrant split lines `rgba(255,255,255,.28)` |
 | Stems | **Dotted** by default: dash `[0.5, 3.5]`, round cap, width 1.6, opacity 30% of the dot color. Styles: Solid / Dotted / Dashed / Off; opacity slider 5–80% |
 | Floor shadow | Ellipse under each stem, `rgba(0,0,0,.3)` |
 | Dot | Radius `6 × perspective scale`; white stroke `rgba(255,255,255,.55)`; drawn far → near |
 | Depth fade | `alpha = 1 − 0.55 × (depth − min)/(max − min)`; far tasks dimmer |
 | Missing value | Hollow dot at the axis' default position (see §6.2, "Missing value") |
-| Auto-fit | Fit to what is drawn (4 floor corners, urgency axis top, all tasks) at the **current** angle; padding 24px; refit animates over 220ms after the mouse is released (not during drag), and on resize |
+| Stacked tasks | Tasks at exactly the same (value, effort, urgency) and hollow state are one **stack marker** (D19): same dot size; 1 offset outline behind it for 2 tasks, 2 outlines for 3+ ("coin stack"); count badge from 3 tasks (`2/5` while a search matches only part of the stack). Members are ordered by score, then key; the best member drives rank. Fire glow if any member is on fire. Grouping is by data, not screen distance, so stacks do not change while rotating |
+| Auto-fit | Fit to what is drawn (4 floor corners, urgency axis top, the 3 axis cone apexes, all tasks) at the **current** angle; padding 24px; refit animates over 220ms after the mouse is released (not during drag), and on resize |
 | Zoom | Scroll / pinch, 0.5×–3×, multiplies the fit scale |
 | Rotation | **Limited** (default): yaw ±18°, pitch ±10° around the default angle. **Free** (F key / quick setting): unlimited yaw, pitch clamped ±89° |
 | Reset | Double-click returns to the default angle and zoom 1× |
@@ -177,13 +179,20 @@ Each task is a dot floating above its (value, effort) position on the floor; hei
 - Labels that cannot be placed are hidden (hover/zoom reveals them).
 - Label backdrop `rgba(15,20,32,.6)`; text opacity `.35 + .65 × brightness`; on-fire text `#ff9a9a`; selected text `#8fb8ff`.
 - Modes (quick setting): **Smart** (default) / All (no culling) / Key only / Off (only the selected task is labeled).
+- Stacks (D19) get **one multi-line label**, one line per member (14px line step), each line with its own rank badge and color:
+  - Smart: up to 2 titles, then `+N more`; All: up to 5 titles, then `+N more`; Key: `KEY-1, KEY-2 +N` on one line; Off: the selected member only.
+  - The selected member is always one of the shown lines.
+  - In Smart / All, a hollow (missing-field) stack of 2+ starts with a header line `N unset` (Key mode stays one line).
+  - While searching, only matching members are listed (the card's `i of n` counts matching members plus the selected one).
+  - Task labels avoid count badges (their own included), axis cones and axis names.
 
 ### 4.5 Interactions
 | Action | Default |
 |---|---|
 | Show / hide panel (global) | **⌥Space** (rebindable; note conflicts with Raycast/Alfred/ChatGPT) |
-| Hover dot | Tooltip: key + summary |
-| Click dot | Select, show detail card. Click empty space deselects |
+| Hover dot | Tooltip: key + summary. On a stack: up to 5 lines `KEY · summary`, then `+N more` |
+| Click dot | Select, show detail card. Click empty space deselects. On a stack: selects the best member; clicking it again selects the next member (cycles) |
+| Step within a stack | Detail card shows `Stacked here ‹ 2 of 3 ›`; **←** / **→** or the arrows step through the members (Tab / ⇧Tab still visit every task by score) |
 | Next / previous task by priority | **Tab** / **⇧Tab** |
 | Open selected issue in Jira | **⌘O** or **Enter** (default browser, `https://<site>/browse/<KEY>`) |
 | Refetch now | **⌘R** or ⟳ |
@@ -378,6 +387,8 @@ TDD per AGENTS.md (`test-driven-development` skill), code review (`requesting-co
 | D16 | **Brand name "Glance — Onscreen Todo Matrix"** | Trifocal, Priority Prism, Lumen | 'Glance' is generic and may clash with other apps | User's choice; says the app's purpose (2-second look); internal identifiers unchanged so existing config/token carry over |
 | D17 | **Always-on-top off by default** | Always on top by default (original §4.2) | Panel can be covered by other apps | User request: hotkey brings it to front; clicking another app puts that app on top; opt-in toggle kept in quick settings |
 | D18 | **Restore last view on launch** | Always start at saved default | Extra config write per view change (debounced 500 ms) | User request: use the last setting on initial load; lastView optional for backward-compatible config |
+| D19 | **Coincident tasks: stack marker (coin-stack look, normal size) + multi-line label + click-to-cycle** | Bigger dot by count (sqrt, capped 1.4×); always-on fan-out ring; spiderfy on click (Leaflet style); data jitter / stacking along the stem; pop-up member list instead of click-to-cycle | Bigger dot: shows workload mass, but size already means "nearer" (perspective) and reads as importance, and covers neighbours. Fan-out: every dot clickable, but draws false positions and the large `unset` group becomes a blob. Spiderfy: spatial, keeps colours, but leader lines + re-layout while rotating + extra hit-testing. Jitter: misstates data (height *is* urgency). Pop-up list: richer, but needs a focus-managed popover. Multi-line labels are taller, so Smart mode may hide a nearby label | Collisions are structural (discrete Jira fields; all missing-field tasks share the default spot). The stack keeps true positions and dot-size meaning, says "N here" at a glance, and reaches every member by mouse and keyboard. User chose the coin-stack look over size growth and wanted both titles shown. Grouping by data keeps stacks stable during rotation. Spiderfy kept as a later option |
+| D20 | **3D cones at the axis tips** | Flat screen-space triangles; text arrows only (as before) | 3D cones cost a convex hull per axis per frame (3 × 17 points) and make the fit ~6% of an axis length smaller | User request: show each axis' direction from O. A projected cone stays correct from any angle (a circle when the axis points at the viewer), where a flat triangle collapses; Effort's cone follows its line from O toward less effort, matching the label and the green = ease color |
 
 ---
 

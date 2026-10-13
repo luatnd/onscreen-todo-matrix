@@ -1,12 +1,15 @@
 import { test, expect } from 'vitest';
 import { computeFit, fitPoints } from '../src/fit.js';
 import { project, DEFAULT_CAMERA } from '../src/projection.js';
+import { AXES, coneApex } from '../src/axes.js';
 
 const cam = { yaw: -179.7, pitch: 33.9, ...DEFAULT_CAMERA };
 
 test('fitPoints includes floor corners and urgency axis even with zero tasks', () => {
   // Review Focus #3
-  expect(fitPoints([])).toHaveLength(5);
+  // expect(fitPoints([])).toHaveLength(5);
+  expect(fitPoints([])).toHaveLength(8); // + 3 axis cone apexes (D20)
+  for (const a of AXES) expect(fitPoints([])).toContainEqual(coneApex(a));
   expect(fitPoints([{ value: 0.2, effort: 0.3, urgency: 0.4 }])).toContainEqual([0.2, 0.3, 0.4]);
 });
 

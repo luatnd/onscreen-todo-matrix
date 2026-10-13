@@ -1,8 +1,10 @@
 import { project } from './projection.js';
+import { AXES, coneApex } from './axes.js';
 
 /** Floor corners, urgency axis top, and every task. */
+/** + the axis cone apexes so the cones are never clipped (D20). */
 export function fitPoints(tasks) {
-  return [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 1, 1], ...tasks.map((t) => [t.value, t.effort, t.urgency])];
+  return [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 1, 1], ...AXES.map((a) => coneApex(a)), ...tasks.map((t) => [t.value, t.effort, t.urgency])];
 }
 
 /** Scale/offset so all points fit inside the canvas at the current angle; zoom multiplies on top. */

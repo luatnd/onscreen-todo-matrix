@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { truncate, brightness, placeLabels, chooseCardCorner } from '../src/labels.js';
+import { truncate, brightness, placeLabels, chooseCardCorner, labelLines } from '../src/labels.js';
 
 const measure = (s) => s.length * 6;
 const task = (key, o = {}) => ({ key, summary: `Summary ${key}`, value: 0.5, effort: 0.5, urgency: 0.5, rank: null, ...o });
@@ -54,6 +54,54 @@ describe('placeLabels', () => {
     const tiny = { width: 20, height: 20 };
     expect(placeLabels(items, opts(tiny)).hidden).toBe(2);
     expect(placeLabels(items, opts({ ...tiny, mode: 'all' })).placed).toHaveLength(2);
+  });
+});
+
+describe('stack labels (D19)', () => {
+  const ms = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((k, i) => task(k, { rank: i === 0 ? 1 : null }));
+  const texts = (ls) => ls.map((l) => l.text);
+  test('smart: two members show both titles', () => {
+    expect(texts(labelLines(ms.slice(0, 2), { mode: 'smart' }))).toEqual(['Summary A', 'Summary B']);
+  });
+  test('smart: more than two members show the best two then +N more', () => {
+    expect(texts(labelLines(ms.slice(0, 4), { mode: 'smart' }))).toEqual(['Summary A', 'Summary B', '+2 more']);
+  });
+  test('all: up to five titles', () => {
+    expect(texts(labelLines(ms, { mode: 'all' }))).toEqual(['Summary A', 'Summary B', 'Summary C', 'Summary D', 'Summary E', '+2 more']);
+  });
+  test('the selected member is always shown and flagged', () => {
+    const ls = labelLines(ms.slice(0, 4), { mode: 'smart', selectedKey: 'D' });
+    expect(texts(ls)).toEqual(['Summary A', 'Summary D', '+2 more']);
+    expect(ls.map((l) => !!l.sel)).toEqual([false, true, false]);
+  });
+  test('key mode joins two keys on one line', () => {
+    expect(texts(labelLines(ms.slice(0, 4), { mode: 'key' }))).toEqual(['A, B +2']);
+    expect(texts(labelLines(ms.slice(0, 1), { mode: 'key' }))).toEqual(['A']);
+  });
+  test('off mode shows only the selected member', () => {
+    expect(texts(labelLines(ms.slice(0, 3), { mode: 'off', selectedKey: 'C' }))).toEqual(['Summary C']);
+  });
+  test('hollow stack of 2+ starts with an unset header', () => {
+    expect(texts(labelLines(ms.slice(0, 3), { mode: 'smart', unset: true }))).toEqual(['3 unset', 'Summary A', 'Summary B', '+1 more']);
+    expect(texts(labelLines(ms.slice(0, 1), { mode: 'smart', unset: true }))).toEqual(['Summary A']);
+  });
+  test('placeLabels sizes one rect for all lines of a stack', () => {
+    const it = { task: ms[0], tasks: ms.slice(0, 2), x: 100, y: 100, r: 6 };
+    const r = placeLabels([it], opts());
+    expect(r.placed).toHaveLength(1);
+    expect(r.placed[0].lines).toHaveLength(2);
+    expect(r.placed[0].rect.h).toBe(30);
+    expect(r.placed[0].rect.w).toBe(measure('Summary A') + 16 + 8);
+  });
+  test('labels avoid extra obstacles and every badge, their own included', () => {
+    const it = { task: ms[0], x: 100, y: 100, r: 6, badge: { x: 106, y: 90, w: 12, h: 12 } };
+    const right = { x: 110, y: 92, w: 80, h: 16 };
+    expect(placeLabels([it], opts()).placed[0].rect.x).toBeLessThan(100); // own badge blocks the right spot
+    expect(placeLabels([{ ...it, badge: undefined }], opts({ obstacles: [right] })).placed[0].rect.x).toBeLessThan(100);
+  });
+  test('off mode labels a stack holding the selected member', () => {
+    const it = { task: ms[0], tasks: ms.slice(0, 2), x: 100, y: 100, r: 6 };
+    expect(placeLabels([it], opts({ mode: 'off', selectedKey: 'B' })).placed[0].text).toBe('Summary B');
   });
 });
 

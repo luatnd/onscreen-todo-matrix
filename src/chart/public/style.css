@@ -40,3 +40,5 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1420; col
 #bReset:hover { color: #fff; border-color: #3b82f6; }
 #bReset:focus-visible { outline: 2px solid #3b82f6; }
 #bReset.show:active { transform: scale(.97); }
+#tip .rk { color: #f4c542; } #tip .more { color: #9aa6bd; }
+#card .stk { margin-top: 2px; } #card .stk .lnk { padding: 0 4px; font-size: 12px; }

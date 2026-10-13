@@ -3,6 +3,7 @@ import { DEFAULT_CAMERA, FACTORY_VIEW, clampView, normalizeYaw } from './project
 import { drawScene } from './render.js';
 import { chooseCardCorner } from './labels.js';
 import { validateState } from './state.js';
+import { stackKey, byScoreThenKey } from './stacks.js';
 import sample from '../../fixtures/render-state.json';
 
 const $ = (id) => document.getElementById(id);
@@ -29,7 +30,23 @@ const S = () => st.state.settings;
 const def = () => ({ yaw: st.state.view.yaw, pitch: st.state.view.pitch });
 const cam = () => ({ yaw: st.yaw, pitch: st.pitch, ...DEFAULT_CAMERA, fit: st.fit });
 const matches = (t) => !st.query || `${t.key} ${t.summary}`.toLowerCase().includes(st.query);
-const byScore = () => [...st.tasks].sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
+// const byScore = () => [...st.tasks].sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
+const byScore = () => [...st.tasks].sort(byScoreThenKey);
+/** Members of the stack holding key (D19), in stack order; only search matches unless none match. */
+function stackOf(key) {
+  const t = key && st.tasks.find((x) => x.key === key);
+  if (!t) return [];
+  const all = st.tasks.filter((x) => stackKey(x) === stackKey(t)).sort(byScoreThenKey);
+  const lit = all.filter((x) => matches(x) || x.key === st.sel); // the selected member always stays in the list
+  return lit.length ? lit : all;
+}
+function stepInStack(dir) {
+  const ms = stackOf(st.sel);
+  if (ms.length < 2) return false;
+  const i = ms.findIndex((t) => t.key === st.sel);
+  select(ms[(i + dir + ms.length) % ms.length].key);
+  return true;
+}
 
 function setupCanvas() {
   const dpr = window.devicePixelRatio || 1;
@@ -141,10 +158,18 @@ function select(key, redraw = true) {
   card.innerHTML = `<div class="k">${escapeHTML(t.key)} · ${escapeHTML(t.status || '')}</div><b>${escapeHTML(t.summary)}</b>
     <div class="row" style="margin-top:4px"><span>Value <b>${f(t.value)}</b></span><span>Ease <b>${f(1 - t.effort)}</b></span><span>Urgency <b>${f(t.urgency)}</b></span></div>
     <div class="row"><span>Priority <b>${escapeHTML(t.priority || '—')}</b></span><span>Due <b>${escapeHTML(t.due || '—')}</b></span>${t.rank ? `<span style="color:#f4c542">#${t.rank} next</span>` : ''}</div>
-    <span class="open" id="openBtn">⌘O Open in Jira ↗</span>`;
+    ${stackRow(t)}<span class="open" id="openBtn">⌘O Open in Jira ↗</span>`;
   card.style.display = 'block';
   $('openBtn').onclick = openIssue;
+  if ($('stPrev')) { $('stPrev').onclick = () => stepInStack(-1); $('stNext').onclick = () => stepInStack(1); }
   if (redraw) draw();
+}
+
+function stackRow(t) {
+  const ms = stackOf(t.key);
+  if (ms.length < 2) return '';
+  const i = ms.findIndex((x) => x.key === t.key) + 1;
+  return `<div class="row stk"><span>Stacked here</span><span><span class="lnk" id="stPrev" title="Previous (←)">‹</span> ${i} of ${ms.length} <span class="lnk" id="stNext" title="Next (→)">›</span></span></div>`;
 }
 
 function atDefault() {
@@ -154,7 +179,8 @@ function atDefault() {
 
 function placeCard() {
   if (!st.sel) return;
-  const m = st.scene.proj.find((x) => x.t.key === st.sel);
+  // const m = st.scene.proj.find((x) => x.t.key === st.sel);
+  const m = st.scene.proj.find((x) => x.stack.some((t) => t.key === st.sel));
   if (!m) return;
   const card = $('card');
   const obstacles = [...st.scene.labels.map((l) => l.rect), ...st.scene.proj.map((x) => ({ x: x.p.x - x.r, y: x.p.y - x.r, w: 2 * x.r, h: 2 * x.r }))];
@@ -188,8 +214,11 @@ function toast(s) {
 // ---------- search ----------
 const q = $('q');
 function openSearch() { q.style.display = 'inline-block'; q.focus(); q.select(); }
-function closeSearch() { q.value = ''; st.query = ''; q.style.display = 'none'; $('pn').focus(); draw(); }
-q.oninput = () => { st.query = q.value.toLowerCase().trim(); draw(); };
+// function closeSearch() { q.value = ''; st.query = ''; q.style.display = 'none'; $('pn').focus(); draw(); }
+// q.oninput = () => { st.query = q.value.toLowerCase().trim(); draw(); };
+// The card's "i of n" depends on the search, so rebuild it (select) before drawing.
+function closeSearch() { q.value = ''; st.query = ''; q.style.display = 'none'; $('pn').focus(); if (st.sel) select(st.sel, false); draw(); }
+q.oninput = () => { st.query = q.value.toLowerCase().trim(); if (st.sel) select(st.sel, false); draw(); };
 q.onkeydown = (e) => {
   if (e.key === 'Escape') { e.preventDefault(); closeSearch(); }
   if (e.key === 'Enter') { e.preventDefault(); const m = byScore().find(matches); if (m) select(m.key); $('pn').focus(); }
@@ -250,6 +279,10 @@ window.addEventListener('keydown', (e) => {
   if (document.activeElement === $('preset')) { if (e.key !== 'Escape') return; $('pn').focus(); }
   const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
   if (e.key === 'Tab') { e.preventDefault(); return step(e.shiftKey ? -1 : 1); }
+  if (!m && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && st.sel && !['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) {
+    if (stepInStack(e.key === 'ArrowLeft' ? -1 : 1)) e.preventDefault();
+    return;
+  }
   if (e.key === 'Escape') {
     e.preventDefault();
     if (qs.style.display === 'block') return toggleQS();
@@ -271,7 +304,9 @@ let drag = null;
 const hit = (ev) => {
   const r = cv.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
   let best = null, bd = 14;
-  for (const m of st.scene.proj) { const d = Math.hypot(m.p.x - mx, m.p.y - my); if (d < bd && matches(m.t)) { bd = d; best = m; } }
+  // for (const m of st.scene.proj) { const d = Math.hypot(m.p.x - mx, m.p.y - my); if (d < bd && matches(m.t)) { bd = d; best = m; } }
+  // <= : on a tie (a hollow and a solid stack at the same spot) the nearer one, drawn on top, wins.
+  for (const m of st.scene.proj) { const d = Math.hypot(m.p.x - mx, m.p.y - my); if (d <= bd && m.lit.length) { bd = d; best = m; } }
   return best;
 };
 cv.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, yaw: st.yaw, pitch: st.pitch, moved: false }; $('pn').focus(); });
@@ -286,7 +321,13 @@ window.addEventListener('mouseup', (e) => {
   if (!drag) return;
   const d = drag; drag = null;
   if (d.moved) { saveLastViewSoon(); return refitAnimated(); }
-  if (e.target === cv) { const m = hit(e); select(m ? m.t.key : null); }
+  // if (e.target === cv) { const m = hit(e); select(m ? m.t.key : null); }
+  if (e.target === cv) {
+    const m = hit(e);
+    // Click a stack: best member first; clicking it again cycles through the members (D19).
+    if (m && m.lit.some((t) => t.key === st.sel) && stepInStack(1)) return;
+    select(m ? m.lit[0].key : null);
+  }
 });
 function resetView() { if (!st.state || atDefault()) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); saveLastViewSoon(); toast('View reset'); }
 cv.addEventListener('dblclick', resetView);
@@ -296,9 +337,13 @@ cv.addEventListener('mousemove', (e) => {
   const tip = $('tip');
   if (drag) { tip.style.display = 'none'; return; }
   const m = hit(e);
-  if (m && m.t.key !== st.sel) {
+  // if (m && m.t.key !== st.sel) {
+  if (m && (m.lit.length > 1 || m.lit[0].key !== st.sel)) {
     tip.style.display = 'block'; tip.style.left = `${m.p.x + 12}px`; tip.style.top = `${m.p.y + 10}px`;
-    tip.textContent = `${m.t.key} · ${m.t.summary}`; cv.style.cursor = 'pointer';
+    // tip.textContent = `${m.t.key} · ${m.t.summary}`; cv.style.cursor = 'pointer';
+    const rows = m.lit.slice(0, 5).map((t) => `<div>${t.rank ? `<b class="rk">${t.rank}</b> ` : ''}${escapeHTML(`${t.key} · ${t.summary}`)}</div>`);
+    if (m.lit.length > 5) rows.push(`<div class="more">+${m.lit.length - 5} more</div>`);
+    tip.innerHTML = rows.join(''); cv.style.cursor = 'pointer';
   } else { tip.style.display = 'none'; cv.style.cursor = 'grab'; }
 });
 cv.addEventListener('mouseleave', () => { $('tip').style.display = 'none'; });

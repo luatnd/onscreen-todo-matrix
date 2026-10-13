@@ -20,3 +20,5 @@ Run after `./scripts/build-app.sh` and `open "build/Glance.app"`.
 - [ ] First launch opens the panel at about 1120×875 (75% larger than before), centered; later launches keep the size/position you last left it at.
 - [ ] Rotate/zoom away from the default view → a 'Reset view' pill appears top-right; clicking it, pressing R, or double-clicking animates back and the pill fades out.
 - [ ] Rotate/zoom, quit, relaunch → the chart opens at the same angle/zoom; Reset view returns to the saved default.
+- [ ] Two or more issues with identical axis values (e.g. same Priority and story points, or all missing a field) show one dot with a coin-stack outline (count badge from 3), one label listing both titles (`+N more` beyond 2), and a hover tooltip listing them; clicking the dot again cycles through them and the card shows `‹ 2 of 3 ›` (←/→ also step).
+- [ ] Each axis ends in a cone pointing away from the origin (Value → high value, Effort → less effort, Urgency → up); rotate freely and look down an axis: its cone shows as a disc, never disappears or clips.
