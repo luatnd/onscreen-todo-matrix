@@ -8,6 +8,8 @@ public final class AppModel: ObservableObject {
     @Published public private(set) var issues: [JiraIssue] = []
     @Published public private(set) var unmappedLabels: [Axis: [String]] = [:]
     public private(set) var configWasCorrupt = false
+    /// The v1.1 → v1.2 migration could not finish; the old setup is kept (§11.10).
+    public private(set) var migrationFailed = false
 
     private let configStore: ConfigStore
     private let cache: IssueCache
@@ -40,6 +42,9 @@ public final class AppModel: ObservableObject {
         self.calendar = calendar
         switch configStore.load() {
         case .loaded(let c): config = c
+        case .legacy(let c):
+            config = c
+            migrationFailed = !ConfigMigration.finish(c, store: configStore, tokens: tokenStore, cache: cache)
         case .missing: config = AppConfig()
         case .corrupt: config = AppConfig(); configWasCorrupt = true
         }

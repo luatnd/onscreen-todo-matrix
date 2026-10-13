@@ -28,6 +28,18 @@ import Testing
         #expect(String(decoding: try Data(contentsOf: bak), as: UTF8.self) == "{not json")
         #expect(!FileManager.default.fileExists(atPath: store.url.path))
     }
+
+    @Test func nonObjectJSONIsCorrupt() throws {
+        let store = ConfigStore(directory: makeTempDir())
+        try Data("[]".utf8).write(to: store.url)
+        guard case .corrupt = store.load() else { Issue.record("expected .corrupt"); return }
+    }
+
+    @Test func wrongTypeInV12FileIsCorrupt() throws {
+        let store = ConfigStore(directory: makeTempDir())
+        try Data(#"{"accounts":[],"presets":5}"#.utf8).write(to: store.url)
+        guard case .corrupt = store.load() else { Issue.record("expected .corrupt"); return }
+    }
 }
 
 @Suite struct IssueCacheTests {

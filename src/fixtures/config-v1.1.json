@@ -1,0 +1,75 @@
+{
+  "activePresetId" : "my-open-work",
+  "axes" : {
+    "effort" : {
+      "mapping" : {
+        "number" : {
+          "fieldId" : "timeoriginalestimate",
+          "invert" : false
+        }
+      },
+      "missingDefault" : 0
+    },
+    "urgency" : {
+      "mapping" : {
+        "option" : {
+          "fieldId" : "priority",
+          "levels" : {
+            "High" : 3.75,
+            "Highest" : 5,
+            "Low" : 1.25,
+            "Lowest" : 0,
+            "Medium" : 2.5
+          }
+        }
+      },
+      "missingDefault" : 0
+    },
+    "value" : {
+      "mapping" : {
+        "option" : {
+          "fieldId" : "customfield_10110",
+          "levels" : {
+            "2 Low" : 2,
+            "3 Medium" : 3,
+            "4 High" : 4,
+            "5 Highest" : 5
+          }
+        }
+      },
+      "missingDefault" : 0
+    }
+  },
+  "email" : "me@example.com",
+  "lastView" : {
+    "pitch" : 33.9,
+    "yaw" : -179.7,
+    "zoom" : 0.6575736466253159
+  },
+  "launchAtLogin" : true,
+  "presets" : [
+    {
+      "id" : "my-open-work",
+      "jql" : "statusCategory != Done ORDER BY priority DESC",
+      "name" : "My open work"
+    }
+  ],
+  "quick" : {
+    "alwaysOnTop" : false,
+    "colorMode" : "rgb",
+    "grid" : true,
+    "labelMode" : "smart",
+    "panelOpacity" : 100,
+    "refreshMinutes" : 15,
+    "rotation" : "free",
+    "stemOpacity" : 30,
+    "stemStyle" : "dotted",
+    "zoneNames" : true
+  },
+  "site" : "https:\/\/example-personal.atlassian.net",
+  "view" : {
+    "pitch" : 33.9,
+    "yaw" : -179.7,
+    "zoom" : 1
+  }
+}
