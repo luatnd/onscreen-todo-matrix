@@ -22,13 +22,29 @@ public enum ConfigMigration {
         return config
     }
 
+    /// Copies the v1.1 token to the keyed `default` item, deleting the legacy item only after reading the copy back.
+    /// True when there is nothing left to copy or the copy was verified.
+    public static func copyLegacyToken(tokens: TokenStore) -> Bool {
+        do {
+            guard let legacy = try tokens.readLegacy() else { return true }
+            if try tokens.read(accountId: JiraAccount.defaultId) != legacy {
+                try tokens.write(legacy, accountId: JiraAccount.defaultId)
+            }
+            guard try tokens.read(accountId: JiraAccount.defaultId) == legacy else { return false }
+            try? tokens.deleteLegacy()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     /// Persists a `.legacy` config:
     /// 1. copy `config.json` → `config.v1.json` (kept);
     /// 2. move `last-fetch.json` → `cache/<activePresetId>.json` (before the Keychain step, so a Keychain failure keeps the cache);
     /// 3. copy the Keychain token `jira-api-token` → `jira-api-token:default`, delete the legacy item only after
     ///    reading the copy back;
     /// 4. save the new format.
-    /// Returns false — leaving `config.json` and the legacy token untouched — if step 1, 2 or 4 fails.
+    /// Returns false — leaving `config.json` and the legacy token untouched — if step 1 (backup), 3 (token) or 4 (save) fails.
     /// Every step is idempotent, so the next launch simply retries.
     public static func finish(_ config: AppConfig, store: ConfigStore, tokens: TokenStore, cache: IssueCache) -> Bool {
         let fm = FileManager.default
@@ -39,19 +55,7 @@ public enum ConfigMigration {
         if let preset = config.activePreset {
             cache.migrateLegacy(toPresetId: preset.id, accountId: preset.accountId)
         }
-        if config.account(id: JiraAccount.defaultId) != nil {
-            do {
-                if let legacy = try tokens.readLegacy() {
-                    if try tokens.read(accountId: JiraAccount.defaultId) != legacy {
-                        try tokens.write(legacy, accountId: JiraAccount.defaultId)
-                    }
-                    guard try tokens.read(accountId: JiraAccount.defaultId) == legacy else { return false }
-                    try? tokens.deleteLegacy()
-                }
-            } catch {
-                return false
-            }
-        }
+        if config.account(id: JiraAccount.defaultId) != nil, !copyLegacyToken(tokens: tokens) { return false }
         return (try? store.save(config)) != nil
     }
 }

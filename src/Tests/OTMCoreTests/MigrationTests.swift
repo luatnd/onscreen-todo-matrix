@@ -163,6 +163,52 @@ import Testing
         #expect(m.renderState.tasks.map(\.key) == ["A-1"])
     }
 
+    func v12Store() throws -> ConfigStore {
+        let store = ConfigStore(directory: dir)
+        var c = AppConfig()
+        c.accounts = [JiraAccount(id: "default", name: "Personal", site: "acme.atlassian.net", email: "me@x.com")]
+        try store.save(c)
+        return store
+    }
+
+    @Test func loadedConfigRetriesVerifiedTokenCopy() throws {
+        _ = try v12Store()
+        let tokens = InMemoryTokenStore(legacyToken: "legacy-tok")
+        let m = AppModel(configStore: ConfigStore(directory: dir), cache: IssueCache(directory: dir), tokenStore: tokens,
+                         scheduler: RefreshScheduler(), makeClient: { _, _, _ in FakeJiraAPI() })
+        #expect(!m.migrationFailed)
+        #expect(tokens.tokens["default"] == "legacy-tok")
+        #expect(tokens.legacyToken == nil)
+    }
+
+    @Test func loadedConfigTokenRetryFailureKeepsLegacyAndFallback() async throws {
+        _ = try v12Store()
+        let tokens = InMemoryTokenStore(legacyToken: "legacy-tok")
+        tokens.writeError = TokenStoreError.status(-25308)
+        let log = ClientLog()
+        let m = AppModel(configStore: ConfigStore(directory: dir), cache: IssueCache(directory: dir), tokenStore: tokens,
+                         scheduler: RefreshScheduler(), makeClient: { s, e, t in log.calls.append((s.absoluteString, e, t)); return FakeJiraAPI() })
+        #expect(m.migrationFailed)
+        #expect(tokens.legacyToken == "legacy-tok")
+        #expect(m.storedToken(accountId: "default") == "legacy-tok")
+        #expect((try? m.makeAPI(accountId: "default")) != nil)
+        #expect(log.calls.last?.token == "legacy-tok")
+    }
+
+    @Test func v11ConfigIsNeverOverwrittenWithoutBackup() throws {
+        let store = try legacyStore()
+        let original = try Data(contentsOf: store.url)
+        // A dangling symlink at the backup path: it "does not exist" yet the copy cannot be made.
+        try FileManager.default.createSymbolicLink(at: store.legacyBackupURL, withDestinationURL: dir.appendingPathComponent("nowhere/x"))
+        let m = AppModel(configStore: store, cache: IssueCache(directory: dir), tokenStore: InMemoryTokenStore(legacyToken: "t"),
+                         scheduler: RefreshScheduler(), makeClient: { _, _, _ in FakeJiraAPI() })
+        #expect(m.migrationFailed)
+        m.setQuickSetting(key: "labelMode", value: .string("key"))
+        m.saveLastView(yaw: 10, pitch: 10, zoom: 1)
+        #expect(m.config.quick.labelMode == "key") // in memory
+        #expect(try Data(contentsOf: store.url) == original)
+    }
+
     @Test func appModelReportsMigrationFailure() throws {
         _ = try legacyStore()
         let tokens = InMemoryTokenStore(legacyToken: "legacy-tok")

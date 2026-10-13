@@ -166,6 +166,34 @@ final class ClientLog {
         #expect(api.fieldsCalls == 1)
     }
 
+    static let namedFields = [JiraField(id: "cf_value", name: "Business Value", custom: true, schemaType: "number"),
+                              JiraField(id: "cf_sp", name: "Story Points", custom: true, schemaType: "number"),
+                              JiraField(id: "priority", name: "Priority", custom: false, schemaType: "priority")]
+
+    @Test func backfillKeepsChangedFlagsOnThatRunAndLater() async {
+        api.fieldsResult = Self.namedFields
+        cache("my-open-work", ["A-1"], account: "default") // value 5, sp 5, Low
+        let m = makeModel(config: configuredConfig())
+        api.searchResult = .success(SearchResult(issues: [issue("A-1", value: 9, sp: 5, priority: "Low")]))
+        await m.refresh(.manual)
+        #expect(m.config.accounts[0].axes.value.fieldName == "Business Value") // backfill ran
+        #expect(m.renderState.tasks.map(\.changed) == [true])
+        api.searchResult = .success(SearchResult(issues: [issue("A-1", value: 2, sp: 5, priority: "Low")]))
+        await m.refresh(.manual)
+        #expect(api.fieldsCalls == 1)
+        #expect(m.renderState.tasks.map(\.changed) == [true])
+    }
+
+    @Test func backfillFailureIsNotRetriedAndLabelsStayIds() async {
+        api.fieldsError = .network("offline")
+        api.searchResult = .success(SearchResult(issues: [issue("A-1", value: 1, sp: 1, priority: "Low")]))
+        let m = makeModel(config: configuredConfig())
+        await m.refresh(.manual)
+        await m.refresh(.manual)
+        #expect(api.fieldsCalls == 1)
+        #expect(m.renderState.axisLabels == RenderAxisLabels(value: "cf_value", effort: "cf_sp", urgency: "priority"))
+    }
+
     // MARK: - Switching presets
 
     @Test func switchingPresetShowsItsCacheInstantlyThenRefetches() async {

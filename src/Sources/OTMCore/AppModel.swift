@@ -82,7 +82,13 @@ public final class AppModel: ObservableObject {
         self.now = now
         self.calendar = calendar
         switch configStore.load() {
-        case .loaded(let c): config = c
+        case .loaded(let c):
+            config = c
+            // Retry a token copy that failed on a previous launch (the legacy item is still there).
+            if c.account(id: JiraAccount.defaultId) != nil, (try? tokenStore.read(accountId: JiraAccount.defaultId)) == nil,
+               (try? tokenStore.readLegacy()) != nil {
+                migrationFailed = !ConfigMigration.copyLegacyToken(tokens: tokenStore)
+            }
         case .legacy(let c):
             config = c
             migrationFailed = !ConfigMigration.finish(c, store: configStore, tokens: tokenStore, cache: cache)
@@ -223,7 +229,10 @@ public final class AppModel: ObservableObject {
               scheduler.shouldRefresh(trigger, intervalMinutes: config.quick.refreshMinutes),
               let api = try? makeAPI(accountId: preset.accountId) else { return }
         isRefreshing = true
-        if await fetch(api, preset: preset) { await backfillFieldNames(api, accountId: preset.accountId) }
+        let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
+        if await fetch(api, preset: preset, previous: previous) {
+            await backfillFieldNames(api, accountId: preset.accountId, previous: previous)
+        }
         isRefreshing = false
         if rerunRequested {
             rerunRequested = false
@@ -232,23 +241,22 @@ public final class AppModel: ObservableObject {
     }
 
     /// Once per account per run: saves display names for mapped axes that have none (labels fall back to ids on failure).
-    private func backfillFieldNames(_ api: JiraAPI, accountId: String) async {
+    private func backfillFieldNames(_ api: JiraAPI, accountId: String, previous: [String: MappedTask]) async {
         let missing = { (a: JiraAccount) in Axis.allCases.contains { a.axes[$0].mapping != nil && a.axes[$0].fieldName == nil } }
         guard !fieldNamesTried.contains(accountId), let account = config.account(id: accountId), missing(account) else { return }
         fieldNamesTried.insert(accountId)
-        let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
-        guard let fields = try? await api.fields(), var c = Optional(config),
-              let i = c.accounts.firstIndex(where: { $0.id == accountId }) else { return }
+        guard let fields = try? await api.fields() else { return }
+        var c = config
+        guard let i = c.accounts.firstIndex(where: { $0.id == accountId }) else { return }
         c.accounts[i].axes = DefaultMappings.withFieldNames(c.accounts[i].axes, fields: fields)
         guard c != config else { return }
         config = c
-        try? configStore.save(c)
+        saveConfig(c)
         rebuild(previous: previous)
     }
 
     @discardableResult
-    private func fetch(_ api: JiraAPI, preset: JQLPreset) async -> Bool {
-        let previous = Dictionary(lastMapped.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
+    private func fetch(_ api: JiraAPI, preset: JQLPreset, previous: [String: MappedTask]) async -> Bool {
         do {
             let result = try await api.search(jql: preset.jql, fields: fetchFields(), cap: Self.issueCap)
             let fetchedAt = now()
@@ -294,7 +302,7 @@ public final class AppModel: ObservableObject {
         banner = nil
         bannerTab = nil
         config = newConfig
-        try? configStore.save(newConfig)
+        saveConfig(newConfig)
         scheduler.resume()
         let after = newConfig.activePreset
         if before?.id != after?.id || before?.accountId != after?.accountId { loadActiveCache() }
@@ -321,7 +329,7 @@ public final class AppModel: ObservableObject {
         var c = config
         c.lastView = ViewDefaults(yaw: normalizedYaw, pitch: min(89, max(-89, pitch)), zoom: min(3, max(0.5, zoom)))
         config = c
-        try? configStore.save(c)
+        saveConfig(c)
     }
 
     /// Issue URLs use the active preset's account site.
@@ -379,9 +387,15 @@ public final class AppModel: ObservableObject {
         syncedAt = cached.fetchedAt
     }
 
+    /// Never overwrite a v1.1 config.json whose backup could not be made: keep changes in memory only.
+    private func saveConfig(_ c: AppConfig) {
+        if migrationFailed && !FileManager.default.fileExists(atPath: configStore.legacyBackupURL.path) { return }
+        try? configStore.save(c)
+    }
+
     private func persist(_ newConfig: AppConfig) {
         config = newConfig
-        try? configStore.save(newConfig)
+        saveConfig(newConfig)
         rebuild(previous: nil)
     }
 

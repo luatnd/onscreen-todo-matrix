@@ -63,7 +63,8 @@ final class FakeJiraAPI: JiraAPI {
     func myself() async throws -> JiraUser { JiraUser(displayName: "Neo", accountId: "1") }
     var fieldsResult: [JiraField] = []
     var fieldsCalls = 0
-    func fields() async throws -> [JiraField] { fieldsCalls += 1; return fieldsResult }
+    var fieldsError: JiraError?
+    func fields() async throws -> [JiraField] { fieldsCalls += 1; if let fieldsError { throw fieldsError }; return fieldsResult }
     func priorities() async throws -> [String] { [] }
     func approximateCount(jql: String) async throws -> Int { try countResult.get() }
     func search(jql: String, fields: [String], cap: Int) async throws -> SearchResult {
