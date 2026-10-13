@@ -16,5 +16,7 @@ cp scripts/Info.plist "$APP/Contents/Info.plist"
 cp chart/dist/index.html chart/dist/style.css chart/dist/chart.js "$APP/Contents/Resources/chart/"
 # SwiftPM resource bundles of dependencies (KeyboardShortcuts localizations)
 find "$BIN" -maxdepth 1 -name '*.bundle' -exec cp -R {} "$APP/Contents/Resources/" \;
+ls "$APP"/Contents/Resources/KeyboardShortcuts_*.bundle >/dev/null 2>&1 \
+  || { echo "ERROR: KeyboardShortcuts_*.bundle missing from app Resources" >&2; exit 1; }
 codesign --force --deep --sign - "$APP"
 echo "Built: $(pwd)/$APP"

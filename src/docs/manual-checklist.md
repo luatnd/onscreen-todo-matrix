@@ -14,3 +14,6 @@ Run after `./scripts/build-app.sh` and `open "build/Onscreen Todo Matrix.app"`.
 - [ ] Settings → General → Launch at login toggles without error (ad-hoc signed builds may show an error: expected; it must be shown, not crash).
 - [ ] Keychain: token survives relaunch; `security find-generic-password -s onscreen-todo-matrix` finds the item.
 - [ ] Offline (Wi-Fi off) → banner "Offline · showing data from HH:mm", dots still shown.
+- [ ] Paste the API token with ⌘V in Settings → Connect (also ⌘A / ⌘C / ⌘Z work in text fields).
+- [ ] First run ends with the panel showing real issues after closing Settings / pressing Done.
+- [ ] Dragging a file onto the panel does not navigate away.
