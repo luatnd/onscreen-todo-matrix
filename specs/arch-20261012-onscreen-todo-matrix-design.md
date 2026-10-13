@@ -137,7 +137,7 @@ Each task is a dot floating above its (value, effort) position on the floor; hei
 | Auto-fit | Fit to what is drawn (4 floor corners, urgency axis top, all tasks) at the **current** angle; padding 24px; refit animates over 220ms after the mouse is released (not during drag), and on resize |
 | Zoom | Scroll / pinch, 0.5×–3×, multiplies the fit scale |
 | Rotation | **Limited** (default): yaw ±18°, pitch ±10° around the default angle. **Free** (F key / quick setting): unlimited yaw, pitch clamped ±89° |
-| Reset | Double-click returns to the default angle and zoom 1× |
+| Reset | "⟲ Reset view" pill (top-right, shown only when off-default) or the R key returns to the saved default angle and zoom (double-click removed, see D19) |
 | Set default | Saves current angle + zoom as the default (pitch capped ±80°); persisted in config |
 | Refetch glide | Tasks whose values changed glide to the new position over 700ms (ease-out cubic) with a gold pulse ring for 1.6s |
 | Search dim | Non-matching tasks drawn at 12% opacity |
@@ -184,6 +184,7 @@ Each task is a dot floating above its (value, effort) position on the floor; hei
 | Show / hide panel (global) | **⌥Space** (rebindable; note conflicts with Raycast/Alfred/ChatGPT) |
 | Hover dot | Tooltip: key + summary |
 | Click dot | Select, show detail card. Click empty space deselects |
+| Double-click dot | Open that issue in Jira (same as select + ⌘O) |
 | Next / previous task by priority | **Tab** / **⇧Tab** |
 | Open selected issue in Jira | **⌘O** or **Enter** (default browser, `https://<site>/browse/<KEY>`) |
 | Refetch now | **⌘R** or ⟳ |
@@ -193,7 +194,7 @@ Each task is a dot floating above its (value, effort) position on the floor; hei
 | Esc | Closes search → deselects → hides the panel (in that order) |
 | Quick settings | **Q** or ◐ |
 | Full settings | **⌘,** |
-| Rotate / zoom / reset | Drag / scroll / double-click |
+| Rotate / zoom / reset | Drag / scroll / R or the Reset view pill |
 | Free rotation toggle | **F** |
 
 ### 4.6 Quick settings popover (◐ / Q)
@@ -378,6 +379,7 @@ TDD per AGENTS.md (`test-driven-development` skill), code review (`requesting-co
 | D16 | **Brand name "Glance — Onscreen Todo Matrix"** | Trifocal, Priority Prism, Lumen | 'Glance' is generic and may clash with other apps | User's choice; says the app's purpose (2-second look); internal identifiers unchanged so existing config/token carry over |
 | D17 | **Always-on-top off by default** | Always on top by default (original §4.2) | Panel can be covered by other apps | User request: hotkey brings it to front; clicking another app puts that app on top; opt-in toggle kept in quick settings |
 | D18 | **Restore last view on launch** | Always start at saved default | Extra config write per view change (debounced 500 ms) | User request: use the last setting on initial load; lastView optional for backward-compatible config |
+| D19 | **No double-click reset** | Double-click resets the view (original prototype gesture) | One fewer shortcut | User: not needed; easy to trigger by accident; the Reset view pill and R cover it. Double-click on a task dot now opens the issue in Jira (user request) |
 
 ---
 

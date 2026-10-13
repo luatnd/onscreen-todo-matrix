@@ -289,8 +289,9 @@ window.addEventListener('mouseup', (e) => {
   if (e.target === cv) { const m = hit(e); select(m ? m.t.key : null); }
 });
 function resetView() { if (!st.state || atDefault()) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); saveLastViewSoon(); toast('View reset'); }
-cv.addEventListener('dblclick', resetView);
 $('bReset').addEventListener('click', resetView);
+// double-click a task dot opens it in Jira; double-click on empty space does nothing
+cv.addEventListener('dblclick', (e) => { const m = hit(e); if (m) { select(m.t.key); openIssue(); } });
 cv.addEventListener('wheel', (e) => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * Math.exp(-e.deltaY * 0.0015))); refitNow(); draw(); syncQS(); saveLastViewSoon(); }, { passive: false });
 cv.addEventListener('mousemove', (e) => {
   const tip = $('tip');
