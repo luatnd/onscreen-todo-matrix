@@ -18,3 +18,4 @@ Run after `./scripts/build-app.sh` and `open "build/Glance.app"`.
 - [ ] First run ends with the panel showing real issues after closing Settings / pressing Done.
 - [ ] Dragging a file onto the panel does not navigate away.
 - [ ] First launch opens the panel at about 1120×875 (75% larger than before), centered; later launches keep the size/position you last left it at.
+- [ ] Rotate/zoom away from the default view → a 'Reset view' pill appears top-right; clicking it, pressing R, or double-clicking animates back and the pill fades out.

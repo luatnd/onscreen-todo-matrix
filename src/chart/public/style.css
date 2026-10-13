@@ -35,6 +35,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1420; col
 #next { flex: none; padding: 6px 10px; border-top: 1px solid #1e2636; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #next b { color: #f4c542; } #next span { cursor: pointer; } #next span:hover { color: #e8ecf4; }
 #q { -webkit-user-select: text; user-select: text; }
-#bReset { position: absolute; left: 10px; bottom: 10px; width: 28px; height: 28px; border-radius: 50%; background: rgba(30,38,54,.85); border: 1px solid #2b3550; color: #c9d2e3; font-size: 15px; cursor: pointer; z-index: 3; padding: 0; line-height: 1; }
+#bReset { position: absolute; top: 10px; right: 10px; z-index: 3; display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px 0 8px; border-radius: 13px; background: rgba(30,38,54,.9); border: 1px solid #2b3550; color: #c9d2e3; font: 11px -apple-system, system-ui, sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.4); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .18s, transform .18s; }
+#bReset.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
 #bReset:hover { color: #fff; border-color: #3b82f6; }
-#bReset.atDefault { opacity: .35; }
+#bReset:focus-visible { outline: 2px solid #3b82f6; }
+#bReset.show:active { transform: scale(.97); }

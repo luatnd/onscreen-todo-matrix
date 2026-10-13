@@ -59,8 +59,7 @@ function draw() {
     w, h, tasks: displayTasks(), cam: cam(), settings: S(), selectedKey: st.sel, matches, pulses: st.pulses, now,
   });
   placeCard();
-  const dv = st.state.view;
-  $('bReset').classList.toggle('atDefault', Math.abs(st.yaw - dv.yaw) < 0.05 && Math.abs(st.pitch - dv.pitch) < 0.05 && Math.abs(st.zoom - dv.zoom) < 0.005);
+  $('bReset').classList.toggle('show', !atDefault());
   $('angTxt').textContent = `${normalizeYaw(st.yaw).toFixed(1)}° / ${st.pitch.toFixed(1)}° · ${st.zoom.toFixed(2)}×`;
   const animating = st.glide || [...st.pulses.values()].some((t) => now - t < 1600);
   if (animating && !raf) raf = requestAnimationFrame(() => { raf = 0; draw(); });
@@ -139,12 +138,22 @@ function select(key, redraw = true) {
   if (redraw) draw();
 }
 
+function atDefault() {
+  const dv = st.state.view;
+  return Math.abs(st.yaw - dv.yaw) < 0.05 && Math.abs(st.pitch - dv.pitch) < 0.05 && Math.abs(st.zoom - dv.zoom) < 0.005;
+}
+
 function placeCard() {
   if (!st.sel) return;
   const m = st.scene.proj.find((x) => x.t.key === st.sel);
   if (!m) return;
   const card = $('card');
   const obstacles = [...st.scene.labels.map((l) => l.rect), ...st.scene.proj.map((x) => ({ x: x.p.x - x.r, y: x.p.y - x.r, w: 2 * x.r, h: 2 * x.r }))];
+  const rb = $('bReset');
+  if (rb.classList.contains('show')) {
+    const a = rb.getBoundingClientRect(), b = cv.getBoundingClientRect();
+    obstacles.push({ x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height }, { x: w - 130, y: 0, w: 130, h: 44 });
+  }
   const c = chooseCardCorner(obstacles, m.p, w, h, card.offsetWidth || 230, card.offsetHeight || 110);
   card.style.left = `${c.x}px`; card.style.top = `${c.y}px`;
 }
@@ -243,6 +252,7 @@ window.addEventListener('keydown', (e) => {
   if (m && k === 'r') { e.preventDefault(); return post({ type: 'refetch' }); }
   if (m && k === 'f') { e.preventDefault(); return openSearch(); }
   if (m && e.key === ',') { e.preventDefault(); return post({ type: 'openSettings' }); }
+  if (!m && k === 'r') { resetView(); return; }
   if (!m && k === 'q') return toggleQS();
   if (!m && k === 'f') { setSetting('rotation', S().rotation === 'free' ? 'limited' : 'free'); toast(S().rotation === 'free' ? 'Free rotation' : 'Limited rotation'); }
 });
@@ -269,7 +279,7 @@ window.addEventListener('mouseup', (e) => {
   if (d.moved) return refitAnimated();
   if (e.target === cv) { const m = hit(e); select(m ? m.t.key : null); }
 });
-function resetView() { if (!st.state) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); }
+function resetView() { if (!st.state || atDefault()) return; st.yaw = st.state.view.yaw; st.pitch = st.state.view.pitch; st.zoom = st.state.view.zoom; refitAnimated(); syncQS(); toast('View reset'); }
 cv.addEventListener('dblclick', resetView);
 $('bReset').addEventListener('click', resetView);
 cv.addEventListener('wheel', (e) => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * Math.exp(-e.deltaY * 0.0015))); refitNow(); draw(); syncQS(); }, { passive: false });
