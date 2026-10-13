@@ -3,7 +3,7 @@
 **Version:** 1.2.0 (draft — multiple Jira accounts)
 **Date:** 2026-10-13
 **Category:** arch
-**Status:** Draft for user review. Contains all of [v1.1.0 (as built)](arch-20261013-onscreen-todo-matrix-design-v1.1.0.md) plus the multi-account design in **§11**; where §11 changes an earlier section, the earlier section says so.
+**Status:** Approved by the user 2026-10-13 ("one account per preset; no combined 'All accounts' chart; you decide the other" → axes per account (D21) and New-preset sheet in Settings (D24) kept as recommended). Contains all of [v1.1.0 (as built)](arch-20261013-onscreen-todo-matrix-design-v1.1.0.md) plus the multi-account design in **§11**; where §11 changes an earlier section, the earlier section says so.
 **Product name:** **Glance — Onscreen Todo Matrix** (app name "Glance"); repo/folder and internal identifiers keep `onscreen-todo-matrix`.
 **Prototype:** [`../prototype/panel-prototype.html`](../prototype/panel-prototype.html), the final interactive panel; brainstorm mockups are in [`../prototype/brainstorm-mockups/`](../prototype/brainstorm-mockups/)
 
@@ -495,6 +495,11 @@ Decoding is tolerant: unknown/legacy keys are read via a `LegacyAppConfigV1` str
 }
 ```
 New JS → Swift messages: `newPreset {accountId}`, `openSettings {tab?}` (tab: `accounts` | `presets` | `axes`). `selectPreset {id}` is unchanged. The shared fixture gains `accounts` and `presets[].accountId`; both test suites validate them.
+
+### 11.8.1 Mapped field names on the axes (user request 2026-10-13)
+- Each axis label in the chart shows the Jira field(s) it is mapped to: `↑ Urgency (Priority)`, `Value (Business Value)`, `← Less effort (Story Points)`; an unmapped axis shows `(not mapped)`.
+- Field display names come from the active account's field list (`JiraField.name`) and are stored with the mapping (`fieldName`) when chosen in Settings, so labels work offline; fallback = field id.
+- `RenderState.axisLabels: {value?, effort?, urgency?}` (strings). The label helper accepts a list of names joined with " + " (e.g. "Priority + Due Date") so a future multi-field axis needs no format change; multi-field axes themselves stay out of scope.
 
 ### 11.9 Out of scope for v1.2.0
 - A combined "All accounts" chart mixing issues from several sites in one view (would need per-account axis normalisation and per-task account badges). Possible later as a special preset type.
