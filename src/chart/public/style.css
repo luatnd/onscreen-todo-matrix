@@ -1,6 +1,6 @@
-html, body { margin: 0; height: 100%; overflow: hidden; background: #0f1420; color: #9aa6bd;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0e17; color: #9aa6bd;
   font: 11px -apple-system, BlinkMacSystemFont, sans-serif; -webkit-user-select: none; user-select: none; }
-#pn { height: 100vh; display: flex; flex-direction: column; outline: none; background: #0f1420; }
+#pn { height: 100vh; display: flex; flex-direction: column; outline: none; background: #0a0e17; }
 .bar { height: 30px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: #131a28; border-bottom: 1px solid #1e2636; }
 #pwrap { position: relative; }
 #pbtn { display: flex; align-items: center; gap: 5px; max-width: 340px; background: #1e2636; color: #c9d2e3; border: none; border-radius: 10px; padding: 2px 8px; font-size: 10.5px; cursor: pointer; white-space: nowrap; }
