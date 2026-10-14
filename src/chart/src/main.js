@@ -83,12 +83,20 @@ function refitAnimated() {
 function draw() {
   if (!g || !st.state) return;
   const now = performance.now();
+  // Toggle the pill first so its rect is current; the scene keeps axis names / labels clear of it.
+  const rb = $('bReset');
+  rb.classList.toggle('show', !atDefault());
+  let reserved = [];
+  if (rb.classList.contains('show')) {
+    const a = rb.getBoundingClientRect(), b = cv.getBoundingClientRect();
+    reserved = [{ x: a.left - b.left - 4, y: a.top - b.top - 4, w: a.width + 8, h: a.height + 8 }];
+  }
   st.scene = drawScene(g, {
-    w, h, tasks: displayTasks(), cam: cam(), settings: S(), selectedKey: st.sel, matches, pulses: st.pulses, now,
+    reserved, w, h, tasks: displayTasks(), cam: cam(), settings: S(), selectedKey: st.sel, matches, pulses: st.pulses, now,
     axisLabels: st.state.axisLabels,
   });
   placeCard();
-  $('bReset').classList.toggle('show', !atDefault());
+  // $('bReset').classList.toggle('show', !atDefault()); (moved above drawScene)
   $('angTxt').textContent = `${normalizeYaw(st.yaw).toFixed(1)}° / ${st.pitch.toFixed(1)}° · ${st.zoom.toFixed(2)}×`;
   const animating = st.glide || [...st.pulses.values()].some((t) => now - t < 1600);
   if (animating && !raf) raf = requestAnimationFrame(() => { raf = 0; draw(); });

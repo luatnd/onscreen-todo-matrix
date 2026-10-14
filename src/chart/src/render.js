@@ -3,7 +3,7 @@ import { taskColor } from './color.js';
 import { placeLabels, brightness, axisTitle, clampLabel } from './labels.js';
 import { groupStacks, isHollow } from './stacks.js';
 import { AXES, coneShape, placeAxisLabel } from './axes.js';
-import { ZONE_STYLE, zoneAnchor, zoneLabelRect } from './zones.js';
+import { ZONE_STYLE, zoneAnchor, zoneLabelRect, nudgeAway } from './zones.js';
 
 // v1.3.1 tints .16/.12/.04/.05 -> .30/.26/.10/.14
 const ZONES = [
@@ -89,8 +89,15 @@ export function drawScene(g, o) {
   // Axis names (with the mapped field) sit just beyond each cone apex on screen (D28).
   g.font = FONT_AXIS; // v1.3.1: bold 12px for the three axis names only
   const axisRects = [];
+  const RES = o.reserved || [];
   [[axisTitle('Value', AL.value), '#7aa2ff'], [axisTitle('← Less effort', AL.effort), '#6ee08f'], [axisTitle('↑ Urgency', AL.urgency), '#ff7070']].forEach(([s, c], i) => {
-    const hw = g.measureText(s).width / 2 + 2, p = placeAxisLabel(cones[i].apex, P(...AXES[i].to), coneBoxes[i], hw, 7, w, h);
+    const hw = g.measureText(s).width / 2 + 2;
+    // const p = placeAxisLabel(...)  (now nudged clear of the reserved rects, e.g. the Reset view pill)
+    let p = placeAxisLabel(cones[i].apex, P(...AXES[i].to), coneBoxes[i], hw, 7, w, h);
+    if (RES.length) {
+      const q = nudgeAway({ x: p.x - hw, y: p.y - 7, w: 2 * hw, h: 14 }, RES, 6, 120);
+      p = clampLabel(q.x + hw, q.y + 7, 2 * hw, w, h, 'center');
+    }
     // txt(p, s, c);
     txt(p, s, c, 'center', true, FONT_AXIS);
     const ar = { x: p.x - hw, y: p.y - 7, w: 2 * hw, h: 14 };
@@ -109,6 +116,7 @@ export function drawScene(g, o) {
       if (hit) { // nudge once, away from the axis name
         c = clampLabel(c.x, c.y + (c.y >= hit.y + hit.h / 2 ? r.h : -r.h), tw, w, h, 'center'); r = zoneLabelRect(c, tw);
       }
+      if (RES.length) { const q = nudgeAway(r, RES, 8, 120); c = clampLabel(c.x + q.x - r.x, c.y + q.y - r.y, tw, w, h, 'center'); r = zoneLabelRect(c, tw); }
       g.lineWidth = 3; g.lineJoin = 'round'; g.strokeStyle = 'rgba(6,9,15,.9)'; g.strokeText(s, c.x, c.y);
       g.globalAlpha = st.hi ? 0.9 : 0.65; g.fillStyle = st.color; g.fillText(s, c.x, c.y); g.globalAlpha = 1;
       coneBoxes.push(r); // obstacle for task labels
@@ -196,7 +204,7 @@ export function drawScene(g, o) {
     task: m.lit[0], tasks: m.lit, unset: isHollow(m.t), badge: m.badge, x: m.p.x, y: m.p.y, r: m.r, fade: m.fade,
   }));
   const { placed, hidden } = placeLabels(items, {
-    width: w, height: h, mode: S.labelMode, selectedKey: o.selectedKey, measure: (s) => g.measureText(s).width, obstacles: coneBoxes,
+    width: w, height: h, mode: S.labelMode, selectedKey: o.selectedKey, measure: (s) => g.measureText(s).width, obstacles: coneBoxes.concat(RES),
   });
   for (const { item, rect, lines } of placed) {
     g.globalAlpha = item.fade;
