@@ -57,11 +57,18 @@ export function placeLabels(items, { width, height, mode, selectedKey, measure, 
     for (const c of cands) {
       const R = { x: c.x, y: c.y, w: tw, h: th };
       if (R.x < 2 || R.y < 2 || R.x + R.w > width - 2 || R.y + R.h > height - 2) continue;
-      if (mode !== 'all' && (placed.some((p) => overlaps(p.rect, R)) || dots.some((d) => d.it !== it && overlaps(d, R)) || blocks.some((b) => overlaps(b, R)))) continue;
+      // if (mode !== 'all' && (placed.some((p) => overlaps(p.rect, R)) || dots.some((d) => d.it !== it && overlaps(d, R)) || blocks.some((b) => overlaps(b, R)))) continue;
+      // v1.3.1: 'all' still skips label/dot collisions but never covers obstacles (zone labels, axis names, cones, badges).
+      if (blocks.some((b) => overlaps(b, R))) continue;
+      if (mode !== 'all' && (placed.some((p) => overlaps(p.rect, R)) || dots.some((d) => d.it !== it && overlaps(d, R)))) continue;
       spot = R;
       break;
     }
-    if (!spot && mode === 'all') spot = { x: cands[0].x, y: cands[0].y, w: tw, h: th };
+    // if (!spot && mode === 'all') spot = { x: cands[0].x, y: cands[0].y, w: tw, h: th };
+    if (!spot && mode === 'all') { // every side blocked: first in-bounds candidate, else the first
+      const c0 = cands.find((c) => c.x >= 2 && c.y >= 2 && c.x + tw <= width - 2 && c.y + th <= height - 2) || cands[0];
+      spot = { x: c0.x, y: c0.y, w: tw, h: th };
+    }
     if (!spot) { hidden++; continue; }
     placed.push({ item: it, rect: spot, text, lines });
   }

@@ -99,6 +99,20 @@ describe('stack labels (D27)', () => {
     expect(placeLabels([it], opts()).placed[0].rect.x).toBeLessThan(100); // own badge blocks the right spot
     expect(placeLabels([{ ...it, badge: undefined }], opts({ obstacles: [right] })).placed[0].rect.x).toBeLessThan(100);
   });
+  test('all mode still avoids obstacles when another side is free', () => {
+    const right = { x: 110, y: 92, w: 80, h: 16 };
+    const r = placeLabels([item(task('A'), 100, 100)], opts({ mode: 'all', obstacles: [right] }));
+    expect(r.placed[0].rect.x).toBeLessThan(100);
+  });
+  test('all mode still places (overlapping) when every side is blocked', () => {
+    const all = { x: 0, y: 0, w: 600, h: 400 };
+    const r = placeLabels([item(task('A'), 100, 100)], opts({ mode: 'all', obstacles: [all] }));
+    expect(r.placed).toHaveLength(1);
+  });
+  test('smart mode: all sides blocked -> hidden (unchanged)', () => {
+    const all = { x: 0, y: 0, w: 600, h: 400 };
+    expect(placeLabels([item(task('A'), 100, 100)], opts({ obstacles: [all] })).hidden).toBe(1);
+  });
   test('off mode labels a stack holding the selected member', () => {
     const it = { task: ms[0], tasks: ms.slice(0, 2), x: 100, y: 100, r: 6 };
     expect(placeLabels([it], opts({ mode: 'off', selectedKey: 'B' })).placed[0].text).toBe('Summary B');

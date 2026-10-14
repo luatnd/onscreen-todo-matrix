@@ -14,7 +14,7 @@ export const zoneLabelRect = (c, textWidth, h = 24, pad = 6) => ({ x: c.x - text
 
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 
-/** Moves rect down (then left) in `step`s, up to `max` each way, until it clears all obstacles; else returns the least-overlapping spot. */
+/** Tries left shifts 0..max (outer) and, for each, down shifts 0..max (inner), in `step`s; returns the first spot clear of all obstacles, else the least-overlapping one. */
 export function nudgeAway(rect, obstacles, step = 8, max = 80) {
   let best = rect, bestA = Infinity;
   for (let l = 0; l <= max; l += step) {

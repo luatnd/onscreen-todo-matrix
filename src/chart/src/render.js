@@ -6,7 +6,7 @@ import { AXES, coneShape, placeAxisLabel } from './axes.js';
 import { ZONE_STYLE, zoneAnchor, zoneLabelRect, nudgeAway } from './zones.js';
 
 // v1.3.1 tints .16/.12/.04/.05 -> .30/.26/.10/.14
-const ZONES = [
+export const ZONES = [
   // [0.5, 1, 0, 0.5, 'rgba(70,180,120,.16)', 'Quick wins', true],
   // [0.5, 1, 0.5, 1, 'rgba(90,130,220,.12)', 'Major projects', true],
   // [0, 0.5, 0, 0.5, 'rgba(160,160,160,.04)', 'Fill-ins', false],
@@ -44,6 +44,8 @@ export function drawScene(g, o) {
     ps.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
     g.closePath(); g.fill();
   };
+  // const txt = (p, s, c, align = 'center', clamp = true) => {
+  //   g.fillStyle = c; g.font = FONT; g.textAlign = align; g.textBaseline = 'middle';
   const txt = (p, s, c, align = 'center', clamp = true, font = FONT) => {
     g.fillStyle = c; g.font = font; g.textAlign = align; g.textBaseline = 'middle';
     const c2 = clampLabel(p.x, p.y, g.measureText(s).width, w, h, align);
@@ -59,6 +61,8 @@ export function drawScene(g, o) {
     for (let i = 0; i <= 10; i++) {
       // const c = i === 5 ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.10)';
       const c = i === 5 ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.18)', lw = i === 5 ? 1.5 : 1;
+      // line(P(i / 10, 0, 0), P(i / 10, 1, 0), c);
+      // line(P(0, i / 10, 0), P(1, i / 10, 0), c);
       line(P(i / 10, 0, 0), P(i / 10, 1, 0), c, lw);
       line(P(0, i / 10, 0), P(1, i / 10, 0), c, lw);
     }
@@ -87,10 +91,12 @@ export function drawScene(g, o) {
   // txt(P(0, -0.14, 0), axisTitle('← Less effort', AL.effort), '#6ee08f');
   // txt(P(0, 1, 1.1), axisTitle('↑ Urgency', AL.urgency), '#ff7070');
   // Axis names (with the mapped field) sit just beyond each cone apex on screen (D28).
+  // g.font = FONT;
   g.font = FONT_AXIS; // v1.3.1: bold 12px for the three axis names only
   const axisRects = [];
   const RES = o.reserved || [];
   [[axisTitle('Value', AL.value), '#7aa2ff'], [axisTitle('← Less effort', AL.effort), '#6ee08f'], [axisTitle('↑ Urgency', AL.urgency), '#ff7070']].forEach(([s, c], i) => {
+    // const hw = g.measureText(s).width / 2 + 2, p = placeAxisLabel(cones[i].apex, P(...AXES[i].to), coneBoxes[i], hw, 7, w, h);
     const hw = g.measureText(s).width / 2 + 2;
     // const p = placeAxisLabel(...)  (now nudged clear of the reserved rects, e.g. the Reset view pill)
     let p = placeAxisLabel(cones[i].apex, P(...AXES[i].to), coneBoxes[i], hw, 7, w, h);
@@ -102,6 +108,7 @@ export function drawScene(g, o) {
     txt(p, s, c, 'center', true, FONT_AXIS);
     const ar = { x: p.x - hw, y: p.y - 7, w: 2 * hw, h: 14 };
     axisRects.push(ar);
+    // coneBoxes.push({ x: p.x - hw, y: p.y - 7, w: 2 * hw, h: 14 }); // task labels avoid axis names too
     coneBoxes.push(ar); // task labels avoid axis names too
   });
 
@@ -148,6 +155,7 @@ export function drawScene(g, o) {
     g.fillStyle = 'rgba(0,0,0,.3)';
     g.beginPath(); g.ellipse(m.f.x, m.f.y, 4 * m.f.s, 1.8 * m.f.s, 0, 0, 7); g.fill();
     if (S.stemStyle !== 'off') {
+      // line(m.f, m.p, taskColor(m.t, S.colorMode, S.stemOpacity / 100), S.stemStyle === 'dotted' ? 1.6 : 1.2, STEM_DASH[S.stemStyle]);
       line(m.f, m.p, taskColor(m.t, S.colorMode, S.stemOpacity / 100), S.stemStyle === 'dotted' ? 2.0 : 1.2, STEM_DASH[S.stemStyle]);
     }
     g.globalAlpha = 1;
@@ -160,6 +168,7 @@ export function drawScene(g, o) {
     // Coin stack (D27): offset outlines behind the dot, same dot size.
     for (let k = Math.min(n, 3) - 1; k >= 1; k--) {
       g.beginPath(); g.arc(m.p.x + 0.45 * r * k, m.p.y - 0.45 * r * k, r, 0, 7);
+      // g.fillStyle = hollow ? 'rgba(15,20,32,.9)' : taskColor(t, S.colorMode, 0.45); g.fill();
       g.fillStyle = hollow ? 'rgba(10,14,23,.9)' : taskColor(t, S.colorMode, 0.45); g.fill();
       g.strokeStyle = hollow ? taskColor(t, S.colorMode, 0.7) : 'rgba(255,255,255,.4)'; g.lineWidth = 1; g.stroke();
     }
@@ -167,10 +176,13 @@ export function drawScene(g, o) {
     if (m.stack.some((x) => x.fire)) { g.shadowColor = '#ff3b3b'; g.shadowBlur = 18; }
     g.beginPath(); g.arc(m.p.x, m.p.y, r, 0, 7);
     if (hollow) {
+      // g.fillStyle = 'rgba(15,20,32,.9)'; g.fill(); g.shadowBlur = 0;
+      // g.strokeStyle = taskColor(t, S.colorMode); g.lineWidth = 2; g.stroke();
       g.fillStyle = 'rgba(10,14,23,.9)'; g.fill(); g.shadowBlur = 0;
       g.strokeStyle = taskColor(t, S.colorMode); g.lineWidth = 2.5; g.stroke();
     } else {
       g.fillStyle = taskColor(t, S.colorMode); g.fill(); g.shadowBlur = 0;
+      // g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1; g.stroke();
       g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1.25; g.stroke();
     }
     // const pt = o.pulses.get(t.key);
@@ -188,7 +200,8 @@ export function drawScene(g, o) {
       g.font = 'bold 9px -apple-system, sans-serif';
       const coins = Math.min(n, 3) - 1;
       const bw = g.measureText(label).width + 6, bx = m.p.x + r + 0.45 * r * coins - 2, by = m.p.y - r - 0.45 * r * coins - 4;
-      g.fillStyle = 'rgba(15,20,32,.9)'; g.fillRect(bx, by - 6, bw, 12);
+      // g.fillStyle = 'rgba(15,20,32,.9)'; g.fillRect(bx, by - 6, bw, 12);
+      g.fillStyle = 'rgba(10,14,23,.9)'; g.fillRect(bx, by - 6, bw, 12);
       m.badge = { x: bx, y: by - 6, w: bw, h: 12 };
       g.fillStyle = '#e8ecf4'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(label, bx + 3, by + 0.5);
       g.font = FONT;
@@ -204,7 +217,7 @@ export function drawScene(g, o) {
     task: m.lit[0], tasks: m.lit, unset: isHollow(m.t), badge: m.badge, x: m.p.x, y: m.p.y, r: m.r, fade: m.fade,
   }));
   const { placed, hidden } = placeLabels(items, {
-    width: w, height: h, mode: S.labelMode, selectedKey: o.selectedKey, measure: (s) => g.measureText(s).width, obstacles: coneBoxes.concat(RES),
+    width: w, height: h, mode: S.labelMode, selectedKey: o.selectedKey, measure: (s) => g.measureText(s).width, obstacles: coneBoxes.concat(RES), // was: obstacles: coneBoxes,
   });
   for (const { item, rect, lines } of placed) {
     g.globalAlpha = item.fade;
