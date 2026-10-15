@@ -435,6 +435,8 @@ window.addEventListener('error', (e) => post({ type: 'log', level: 'error', msg:
 
 // ---------- boot ----------
 setupCanvas();
-window.otm = { render };
+// window.otm = { render };
+window.otm = { render, select, openMenu }; // select/openMenu: used by the README demo page (chart/demo)
 post({ type: 'ready' });
-if (!native) setTimeout(() => render(structuredClone(sample)), 0);
+// if (!native) setTimeout(() => render(structuredClone(sample)), 0);
+if (!native && !window.__otmDemo) setTimeout(() => render(structuredClone(sample)), 0);

@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "build": "esbuild src/main.js --bundle --format=iife --target=safari17 --outfile=dist/chart.js && cp public/index.html public/style.css dist/"
+    "build": "esbuild src/main.js --bundle --format=iife --target=safari17 --outfile=dist/chart.js && cp public/index.html public/style.css dist/",
+    "demo:build": "node demo/build-demo.mjs",
+    "demo:images": "node demo/build-demo.mjs --images"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
