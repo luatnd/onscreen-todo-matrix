@@ -116,7 +116,7 @@ export function drawScene(g, o) {
   if (S.zoneNames) {
     g.font = FONT_ZONE; g.textBaseline = 'middle'; g.textAlign = 'center';
     ZONES.forEach((z, i) => {
-      const st = ZONE_STYLE[i], s = st.name.toUpperCase(), tw = g.measureText(s).width;
+      const st = ZONE_STYLE[i], s = (i + 1) + '  ' + st.name.toUpperCase() /* number = which area to do first (spec v1.3.2) */, tw = g.measureText(s).width;
       const a = P(zoneAnchor(z).x, zoneAnchor(z).y, 0);
       let c = clampLabel(a.x, a.y, tw, w, h, 'center'), r = zoneLabelRect(c, tw);
       const hit = axisRects.find((q) => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h);
