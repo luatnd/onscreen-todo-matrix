@@ -8,7 +8,7 @@ let package = Package(
         .executable(name: "OnscreenTodoMatrix", targets: ["OnscreenTodoMatrix"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", exact: "3.1.0"),
+        .package(path: "Vendor/KeyboardShortcuts"),
     ],
     targets: [
         .target(name: "OTMCore"),

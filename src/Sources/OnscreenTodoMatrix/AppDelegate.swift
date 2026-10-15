@@ -13,6 +13,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var bag = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Build-time packaging check (scripts/build-app.sh): touching the Recorder resolves
+        // KeyboardShortcuts' Bundle.module, which traps if the resource bundle is not found.
+        if ProcessInfo.processInfo.environment["GLANCE_SELFTEST"] == "1" {
+            _ = KeyboardShortcuts.RecorderCocoa(for: .togglePanel)
+            print("selftest ok")
+            exit(0)
+        }
         if let id = Bundle.main.bundleIdentifier,
            NSRunningApplication.runningApplications(withBundleIdentifier: id).contains(where: { $0 != .current }) {
             let alert = NSAlert()

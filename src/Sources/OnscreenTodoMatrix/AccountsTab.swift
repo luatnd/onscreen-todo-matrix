@@ -36,8 +36,9 @@ struct AccountsTab: View {
 
     var body: some View {
         Form {
-            if let form = Binding($draft) {
-                accountForm(form)
+            // Binding($draft) force-unwraps and traps when draft turns nil mid-update (Save/Cancel crash).
+            if draft != nil {
+                accountForm(Binding(get: { draft ?? AccountDraft() }, set: { if draft != nil { draft = $0 } }))
             } else {
                 accountList
             }
