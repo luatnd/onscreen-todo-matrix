@@ -1,0 +1,281 @@
+{
+ "today": "2026-10-14",
+ "site": "https://acme.atlassian.net",
+ "cases": [
+  {
+   "name": "option-number-timeline",
+   "axes": {
+    "value": {
+     "mapping": {
+      "option": {
+       "fieldId": "customfield_10001",
+       "levels": {
+        "Big": 5,
+        "Medium": 2.5,
+        "Small": 0
+       }
+      }
+     },
+     "missingDefault": 0.5
+    },
+    "effort": {
+     "mapping": {
+      "number": {
+       "fieldId": "timeoriginalestimate",
+       "invert": false
+      }
+     },
+     "missingDefault": 0.5,
+     "timeline": {
+      "startFieldId": "customfield_10015",
+      "endFieldId": "duedate",
+      "unit": "hours"
+     }
+    },
+    "urgency": {
+     "mapping": {
+      "option": {
+       "fieldId": "priority",
+       "levels": {
+        "Highest": 5,
+        "High": 3.75,
+        "Medium": 2.5,
+        "Low": 1.25,
+        "Lowest": 0
+       }
+      }
+     },
+     "missingDefault": 0.5
+    }
+   },
+   "issues": [
+    {
+     "key": "A-1",
+     "fields": {
+      "summary": "Task A-1",
+      "status": {
+       "name": "To Do"
+      },
+      "priority": {
+       "name": "High"
+      },
+      "customfield_10001": {
+       "name": "Big"
+      },
+      "timeoriginalestimate": 28800,
+      "duedate": "2026-10-20"
+     }
+    },
+    {
+     "key": "A-2",
+     "fields": {
+      "summary": "Task A-2",
+      "status": {
+       "name": "In Progress"
+      },
+      "priority": {
+       "name": "Highest"
+      },
+      "customfield_10001": {
+       "name": "Medium"
+      },
+      "timespent": 3600,
+      "timeestimate": 7200
+     }
+    },
+    {
+     "key": "A-3",
+     "fields": {
+      "summary": "Task A-3",
+      "status": {
+       "name": "To Do"
+      },
+      "priority": {
+       "name": "Low"
+      },
+      "customfield_10001": {
+       "name": "Small"
+      },
+      "customfield_10015": "2026-10-12",
+      "duedate": "2026-10-16"
+     }
+    },
+    {
+     "key": "A-4",
+     "fields": {
+      "summary": "Task A-4",
+      "status": {
+       "name": "To Do"
+      },
+      "priority": {
+       "name": "Medium"
+      },
+      "customfield_10001": {
+       "name": "Big"
+      },
+      "customfield_10015": "2026-10-15",
+      "duedate": "2026-10-21T10:00:00.000+0700"
+     }
+    },
+    {
+     "key": "A-5",
+     "fields": {
+      "summary": "Task A-5",
+      "status": {
+       "name": "To Do"
+      },
+      "priority": {
+       "name": "High"
+      },
+      "customfield_10001": {
+       "name": "Big"
+      },
+      "customfield_10015": "2026-10-12",
+      "duedate": "2026-10-16",
+      "issuetype": {
+       "name": "Epic"
+      }
+     }
+    },
+    {
+     "key": "A-6",
+     "fields": {
+      "summary": "Task A-6",
+      "status": {
+       "name": "To Do"
+      }
+     }
+    },
+    {
+     "key": "A-7",
+     "fields": {
+      "summary": "Task A-7",
+      "status": {
+       "name": "To Do"
+      },
+      "priority": {
+       "name": "High"
+      },
+      "customfield_10001": {
+       "name": "Weird"
+      },
+      "timeoriginalestimate": 57600
+     }
+    },
+    {
+     "key": "B-1",
+     "fields": {
+      "summary": "Task B-1",
+      "status": {
+       "name": "To Do"
+      },
+      "priority": {
+       "name": "High"
+      },
+      "customfield_10001": {
+       "name": "Big"
+      },
+      "timeoriginalestimate": 28800,
+      "duedate": "2026-10-20"
+     }
+    },
+    {
+     "key": "A-9",
+     "fields": {
+      "summary": "Task A-9",
+      "status": {
+       "name": "Done"
+      },
+      "priority": {
+       "name": "Highest"
+      },
+      "customfield_10001": {
+       "name": "Big"
+      },
+      "timeoriginalestimate": 3600
+     }
+    }
+   ]
+  },
+  {
+   "name": "number-date-invert",
+   "axes": {
+    "value": {
+     "mapping": {
+      "number": {
+       "fieldId": "customfield_10002",
+       "min": 0,
+       "max": 10,
+       "invert": false
+      }
+     },
+     "missingDefault": 0.2
+    },
+    "effort": {
+     "mapping": {
+      "number": {
+       "fieldId": "customfield_10003",
+       "invert": true
+      }
+     },
+     "missingDefault": 0.5
+    },
+    "urgency": {
+     "mapping": {
+      "date": {
+       "fieldId": "duedate",
+       "horizonDays": 14,
+       "invert": false
+      }
+     },
+     "missingDefault": 0.3
+    }
+   },
+   "issues": [
+    {
+     "key": "C-1",
+     "fields": {
+      "summary": "Task C-1",
+      "customfield_10002": 9,
+      "customfield_10003": 2,
+      "duedate": "2026-10-14"
+     }
+    },
+    {
+     "key": "C-2",
+     "fields": {
+      "summary": "Task C-2",
+      "customfield_10002": 3,
+      "customfield_10003": 8,
+      "duedate": "2026-10-21"
+     }
+    },
+    {
+     "key": "C-3",
+     "fields": {
+      "summary": "Task C-3",
+      "customfield_10002": 15,
+      "customfield_10003": 5,
+      "duedate": "2026-12-01"
+     }
+    },
+    {
+     "key": "C-4",
+     "fields": {
+      "summary": "Task C-4",
+      "customfield_10002": 5,
+      "customfield_10003": 5,
+      "duedate": "2026-10-10"
+     }
+    },
+    {
+     "key": "C-5",
+     "fields": {
+      "summary": "Task C-5",
+      "summary_only": true
+     }
+    }
+   ]
+  }
+ ]
+}
