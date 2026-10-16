@@ -29,15 +29,22 @@ Switch between accounts and saved presets from the menu (or ⌘1–⌘9):
 
 <p align="center"><img src="assets/glance-preset-menu.png" alt="Glance preset menu with Personal and Acme accounts" width="900"></p>
 
-### Glance Lite on your iPhone (planned, v1.4.0)
+### Glance Lite on your iPhone
 
-A read-only web app (PWA, no iOS app) that shows the same canvas on your phone, even when your Mac is off.
+A read-only web app (PWA, no iOS app) that shows the same canvas on your phone, even when your Mac is off. Quick settings and presets work; the full Settings window (accounts, JQL, field mapping) stays on the Mac. One Jira account per phone.
 
-- **Set up once:** in Glance on the Mac choose *Send to phone…*. Scan the QR code, type the one-time code, paste a phone-only read-only Jira token. Add it to your Home Screen.
-- **Then standalone:** the phone fetches Jira itself. Quick settings and presets work; the full Settings window stays on the Mac. Some features are missing on purpose (it is "Lite").
-- **Security first:** settings travel encrypted in the link's `#fragment` (never sent to a server) and need the one-time code; the link expires in 10 minutes. The phone uses its own read-only token, which you can revoke in Atlassian at any time. A tiny Cloudflare Worker in your own account serves the app and forwards read-only requests to your Jira host only; it stores and logs nothing. Strict CSP, no third-party scripts, and a *Forget this phone* button. No phone lock by choice.
+**Set up once**
+1. Deploy the Worker to your own Cloudflare account (free): `cd src/phone && npm install && npm run build`, set `JIRA_HOST` in `wrangler.toml` to your Jira host (e.g. `acme.atlassian.net`), then `npx wrangler login && npx wrangler deploy`. You get an address like `glance-lite.<you>.workers.dev`.
+2. At id.atlassian.com → Security → API tokens, create a **separate token for the phone** (you can revoke it alone).
+3. In Glance on the Mac: Settings → General → **Send to phone…**, enter the address, scan the QR code with the iPhone camera, type the one-time code, paste the phone token. Share → Add to Home Screen.
 
-Design: [specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md](specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md).
+**Security**
+- Settings travel encrypted (AES-GCM, key from the one-time code via PBKDF2) in the link's `#fragment`, which is never sent to any server and is removed from the address bar on load. The link expires in 10 minutes; the link alone is useless without the code.
+- Your Mac's Jira token is never exported. The phone uses its own token, stored encrypted (non-extractable WebCrypto key in IndexedDB).
+- The Worker serves the app and forwards **GET-only, allow-listed read calls to your Jira host only**; it stores and logs nothing. Strict CSP, no third-party scripts, no cookies. *Settings (on the phone) → Forget this phone* wipes everything. No phone lock, by choice.
+- Revoke the phone token in Atlassian to cut the phone off at any time.
+
+Design: [specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md](specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md) · Plan: [plans/arch-20261016-onscreen-todo-matrix-plan-v1.4.0.md](plans/arch-20261016-onscreen-todo-matrix-plan-v1.4.0.md) · Test on the phone: [src/docs/phone-checklist.md](src/docs/phone-checklist.md).
 
 - Idea: [idea-v1.0.0.md](idea-v1.0.0.md)
 - Feature (non-technical): [features/product-20261012-3d-priority-panel.md](features/product-20261012-3d-priority-panel.md)
@@ -46,7 +53,7 @@ Design: [specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md](specs/arch-2
   - [v1.2.0 — multiple Jira accounts](specs/arch-20261013-onscreen-todo-matrix-design-v1.2.0.md)
   - [v1.3.0 — stacked tasks, axis cones, effort fallback](specs/arch-20261013-onscreen-todo-matrix-design-v1.3.0.md)
   - [v1.3.1 — readability: higher contrast, larger zone labels](specs/arch-20261014-onscreen-todo-matrix-design-v1.3.1.md)
-  - [v1.4.0 — Glance Lite iPhone PWA (draft)](specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md)
+  - [v1.4.0 — Glance Lite iPhone PWA](specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md)
 - Implementation plan v1: [plans/arch-20261012-onscreen-todo-matrix-plan.md](plans/arch-20261012-onscreen-todo-matrix-plan.md)
 - Implementation plan v1.2.0 (multiple Jira accounts): [plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md](plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md)
 - Interactive prototype: [prototype/panel-prototype.html](prototype/panel-prototype.html)
@@ -62,7 +69,7 @@ Design: [specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md](specs/arch-2
 - [x] v1.2.0: multiple Jira accounts, per-account presets/axes, "+ New preset…" menu, axis labels show mapped fields — spec → plan → implement
 - [x] v1.3.1: higher-contrast canvas; large upper-case zone labels that never overlap task titles (spec D30–D31)
 - [x] v1.3.0 (spec; Swift verified on Linux only, run the manual checklist on a Mac): stack marker for coincident tasks, 3D cones at the axis tips, effort fallback from logged time / Start → Due timeline (hours or days)
-- [ ] v1.4.0: Glance Lite iPhone PWA + Cloudflare Worker (spec draft → plan → implement)
+- [x] v1.4.0: Glance Lite iPhone PWA + Cloudflare Worker + Send to phone… (needs your Cloudflare deploy and an iPhone check)
 - [ ] Later: combine multiple fields per axis; editable scoring; signed + notarized release; Homebrew cask
 
 # Build & run
@@ -78,4 +85,4 @@ Installer: `./scripts/build-dmg.sh` → `build/Glance-1.2.0.dmg`; open it and dr
 
 The build is ad-hoc signed: a DMG built on your own Mac opens normally; on another Mac macOS blocks it the first time → System Settings → Privacy & Security → "Open Anyway" (or `xattr -dr com.apple.quarantine /Applications/Glance.app`). Notarized builds need an Apple Developer ID (future).
 
-Development: `swift test` (core logic), `cd chart && npm test` (chart), `swift run OnscreenTodoMatrix` (runs with `chart/dist` from the source tree; run `npm run build` in `chart/` first). Manual window checks: [src/docs/manual-checklist.md](src/docs/manual-checklist.md). Regenerate the README images (needs Google Chrome): `cd chart && npm run demo:images`.
+Development: `swift test` (core logic), `cd chart && npm test` (chart), `cd phone && npm test` (Glance Lite; `node dev-server.mjs` runs it locally against a fake Jira), `swift run OnscreenTodoMatrix` (runs with `chart/dist` from the source tree; run `npm run build` in `chart/` first). Manual window checks: [src/docs/manual-checklist.md](src/docs/manual-checklist.md). Regenerate the README images (needs Google Chrome): `cd chart && npm run demo:images`.

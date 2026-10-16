@@ -145,10 +145,12 @@ public struct AppConfig: Codable, Equatable, Sendable {
     public var lastView: ViewDefaults? = nil
     public var quick = QuickSettings()
     public var launchAtLogin = false
+    /// Address of the Glance Lite web app (Send to phone…); empty until the user enters it.
+    public var phoneURL = ""
     public init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case accounts, presets, activePresetId, view, lastView, quick, launchAtLogin
+        case accounts, presets, activePresetId, view, lastView, quick, launchAtLogin, phoneURL
     }
 
     /// Tolerant: every key is optional so a partially written (or older) file never counts as corrupt.
@@ -163,6 +165,7 @@ public struct AppConfig: Codable, Equatable, Sendable {
         lastView = try c.decodeIfPresent(ViewDefaults.self, forKey: .lastView)
         quick = try c.decodeIfPresent(QuickSettings.self, forKey: .quick) ?? d.quick
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
+        phoneURL = try c.decodeIfPresent(String.self, forKey: .phoneURL) ?? d.phoneURL
     }
 
     public var activePreset: JQLPreset? {

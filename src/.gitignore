@@ -5,3 +5,5 @@ chart/dist/
 *.xcodeproj
 .swiftpm/
 chart/dist-demo/
+phone/node_modules/
+phone/dist/

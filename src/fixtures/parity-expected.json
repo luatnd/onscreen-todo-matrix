@@ -1,0 +1,295 @@
+[
+  {
+    "name" : "option-number-timeline",
+    "tasks" : [
+      {
+        "changed" : false,
+        "effort" : 0,
+        "fire" : true,
+        "key" : "A-9",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "Highest",
+        "rank" : 1,
+        "score" : 5,
+        "status" : "Done",
+        "summary" : "Task A-9",
+        "urgency" : 1,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-9",
+        "value" : 1
+      },
+      {
+        "changed" : false,
+        "derived" : {
+          "amount" : 3,
+          "clamped" : false,
+          "kind" : "logged",
+          "unit" : "h"
+        },
+        "effort" : 0.13333333333333333,
+        "fire" : false,
+        "key" : "A-2",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "Highest",
+        "rank" : 2,
+        "score" : 1.7307692307692306,
+        "status" : "In Progress",
+        "summary" : "Task A-2",
+        "urgency" : 1,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-2",
+        "value" : 0.5
+      },
+      {
+        "changed" : false,
+        "due" : "2026-10-20",
+        "effort" : 0.4666666666666667,
+        "fire" : false,
+        "key" : "A-1",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "High",
+        "rank" : 3,
+        "score" : 1.6304347826086958,
+        "status" : "To Do",
+        "summary" : "Task A-1",
+        "urgency" : 0.75,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-1",
+        "value" : 1
+      },
+      {
+        "changed" : false,
+        "due" : "2026-10-20",
+        "effort" : 0.4666666666666667,
+        "fire" : false,
+        "key" : "B-1",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "High",
+        "score" : 1.6304347826086958,
+        "status" : "To Do",
+        "summary" : "Task B-1",
+        "urgency" : 0.75,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/B-1",
+        "value" : 1
+      },
+      {
+        "changed" : false,
+        "due" : "2026-10-16",
+        "effort" : 0.5,
+        "fire" : false,
+        "key" : "A-5",
+        "missing" : {
+          "effort" : true,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "High",
+        "score" : 1.5625,
+        "status" : "To Do",
+        "summary" : "Task A-5",
+        "urgency" : 0.75,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-5",
+        "value" : 1
+      },
+      {
+        "changed" : false,
+        "derived" : {
+          "amount" : 40,
+          "clamped" : true,
+          "from" : "2026-10-15",
+          "kind" : "timeline",
+          "to" : "2026-10-21",
+          "unit" : "h"
+        },
+        "due" : "2026-10-21T10:00:00.000+0700",
+        "effort" : 1,
+        "fire" : false,
+        "key" : "A-4",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "Medium",
+        "score" : 0.7692307692307692,
+        "status" : "To Do",
+        "summary" : "Task A-4",
+        "urgency" : 0.5,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-4",
+        "value" : 1
+      },
+      {
+        "changed" : false,
+        "effort" : 0.5,
+        "fire" : false,
+        "key" : "A-6",
+        "missing" : {
+          "effort" : true,
+          "urgency" : true,
+          "value" : true
+        },
+        "score" : 0.625,
+        "status" : "To Do",
+        "summary" : "Task A-6",
+        "urgency" : 0.5,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-6",
+        "value" : 0.5
+      },
+      {
+        "changed" : false,
+        "effort" : 1,
+        "fire" : false,
+        "key" : "A-7",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "High",
+        "score" : 0.4807692307692307,
+        "status" : "To Do",
+        "summary" : "Task A-7",
+        "urgency" : 0.75,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-7",
+        "value" : 0.5
+      },
+      {
+        "changed" : false,
+        "derived" : {
+          "amount" : 40,
+          "clamped" : true,
+          "from" : "2026-10-12",
+          "kind" : "timeline",
+          "to" : "2026-10-16",
+          "unit" : "h"
+        },
+        "due" : "2026-10-16",
+        "effort" : 1,
+        "fire" : false,
+        "key" : "A-3",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "priority" : "Low",
+        "score" : 0,
+        "status" : "To Do",
+        "summary" : "Task A-3",
+        "urgency" : 0.25,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/A-3",
+        "value" : 0
+      }
+    ]
+  },
+  {
+    "name" : "number-date-invert",
+    "tasks" : [
+      {
+        "changed" : false,
+        "due" : "2026-10-14",
+        "effort" : 1,
+        "fire" : true,
+        "key" : "C-1",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "rank" : 1,
+        "score" : 1.0384615384615385,
+        "status" : "",
+        "summary" : "Task C-1",
+        "urgency" : 1,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/C-1",
+        "value" : 0.9
+      },
+      {
+        "changed" : false,
+        "due" : "2026-10-21",
+        "effort" : 0,
+        "fire" : false,
+        "key" : "C-2",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "rank" : 2,
+        "score" : 1,
+        "status" : "",
+        "summary" : "Task C-2",
+        "urgency" : 0.5,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/C-2",
+        "value" : 0.3
+      },
+      {
+        "changed" : false,
+        "due" : "2026-10-10",
+        "effort" : 0.5,
+        "fire" : false,
+        "key" : "C-4",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "rank" : 3,
+        "score" : 0.9375,
+        "status" : "",
+        "summary" : "Task C-4",
+        "urgency" : 1,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/C-4",
+        "value" : 0.5
+      },
+      {
+        "changed" : false,
+        "due" : "2026-12-01",
+        "effort" : 0.5,
+        "fire" : false,
+        "key" : "C-3",
+        "missing" : {
+          "effort" : false,
+          "urgency" : false,
+          "value" : false
+        },
+        "score" : 0.625,
+        "status" : "",
+        "summary" : "Task C-3",
+        "urgency" : 0,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/C-3",
+        "value" : 1
+      },
+      {
+        "changed" : false,
+        "effort" : 0.5,
+        "fire" : false,
+        "key" : "C-5",
+        "missing" : {
+          "effort" : true,
+          "urgency" : true,
+          "value" : true
+        },
+        "score" : 0.20000000000000004,
+        "status" : "",
+        "summary" : "Task C-5",
+        "urgency" : 0.3,
+        "url" : "https:\/\/acme.atlassian.net\/browse\/C-5",
+        "value" : 0.2
+      }
+    ]
+  }
+]

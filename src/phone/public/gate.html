@@ -1,0 +1,30 @@
+<div id="gate" hidden>
+  <div class="box">
+    <div id="imp" hidden>
+      <h1>Import settings</h1>
+      <p>Type the code shown on your Mac.</p>
+      <input id="code" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="12" placeholder="XXXX-XXXX" inputmode="text">
+      <div class="err" id="codeErr"></div>
+      <button id="codeGo">Continue</button>
+    </div>
+    <div id="impToken" hidden>
+      <h1>Phone token</h1>
+      <p>Paste a <b>read-only</b> Atlassian API token made only for this phone. Jira account: <b id="tokEmail"></b></p>
+      <input id="tok" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="API token">
+      <div class="err" id="tokErr"></div>
+      <button id="tokGo">Save and open</button>
+      <p class="small">Stored encrypted on this phone only. Revoke it anytime at id.atlassian.com.</p>
+    </div>
+    <div id="impEmpty" hidden>
+      <h1>Glance Lite</h1>
+      <p>On your Mac, open Glance → Settings → General → <b>Send to phone…</b> and scan the QR code with this phone's camera.</p>
+    </div>
+    <div id="impSettings" hidden>
+      <h1>This phone</h1>
+      <p>Change quick settings with ◐. Accounts, queries and field mapping are set on the Mac and sent again with Send to phone.</p>
+      <button id="setToken" class="sec">Replace phone token</button>
+      <button id="setForget" class="danger">Forget this phone</button>
+      <button id="setClose" class="sec">Close</button>
+    </div>
+  </div>
+</div>

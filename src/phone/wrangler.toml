@@ -1,0 +1,13 @@
+# Deploy: cd src/phone && npm run build && npx wrangler deploy
+name = "glance-lite"
+main = "worker/index.js"
+compatibility_date = "2025-10-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+# Your Jira Cloud host (no https://). The proxy forwards to this host only.
+JIRA_HOST = "your-site.atlassian.net"

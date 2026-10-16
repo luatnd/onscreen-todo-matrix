@@ -19,6 +19,8 @@ final class SettingsViewModel: ObservableObject {
     /// Non-nil while the New preset sheet is shown.
     @Published var newPreset: NewPresetRequest?
     @Published var generalError = ""
+    /// General tab: the Send to phone sheet.
+    @Published var showPhone = false
 
     let model: AppModel
 
