@@ -29,6 +29,16 @@ Switch between accounts and saved presets from the menu (or ⌘1–⌘9):
 
 <p align="center"><img src="assets/glance-preset-menu.png" alt="Glance preset menu with Personal and Acme accounts" width="900"></p>
 
+### Glance Lite on your iPhone (planned, v1.4.0)
+
+A read-only web app (PWA, no iOS app) that shows the same canvas on your phone, even when your Mac is off.
+
+- **Set up once:** in Glance on the Mac choose *Send to phone…*. Scan the QR code, type the one-time code, paste a phone-only read-only Jira token. Add it to your Home Screen.
+- **Then standalone:** the phone fetches Jira itself. Quick settings and presets work; the full Settings window stays on the Mac. Some features are missing on purpose (it is "Lite").
+- **Security first:** settings travel encrypted in the link's `#fragment` (never sent to a server) and need the one-time code; the link expires in 10 minutes. The phone uses its own read-only token, which you can revoke in Atlassian at any time. A tiny Cloudflare Worker in your own account serves the app and forwards read-only requests to your Jira host only; it stores and logs nothing. Strict CSP, no third-party scripts, and a *Forget this phone* button. No phone lock by choice.
+
+Design: [specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md](specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md).
+
 - Idea: [idea-v1.0.0.md](idea-v1.0.0.md)
 - Feature (non-technical): [features/product-20261012-3d-priority-panel.md](features/product-20261012-3d-priority-panel.md)
 - Design spec (technical): [specs/arch-20261012-onscreen-todo-matrix-design.md](specs/arch-20261012-onscreen-todo-matrix-design.md) (v1.0.0)
@@ -36,6 +46,7 @@ Switch between accounts and saved presets from the menu (or ⌘1–⌘9):
   - [v1.2.0 — multiple Jira accounts](specs/arch-20261013-onscreen-todo-matrix-design-v1.2.0.md)
   - [v1.3.0 — stacked tasks, axis cones, effort fallback](specs/arch-20261013-onscreen-todo-matrix-design-v1.3.0.md)
   - [v1.3.1 — readability: higher contrast, larger zone labels](specs/arch-20261014-onscreen-todo-matrix-design-v1.3.1.md)
+  - [v1.4.0 — Glance Lite iPhone PWA (draft)](specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md)
 - Implementation plan v1: [plans/arch-20261012-onscreen-todo-matrix-plan.md](plans/arch-20261012-onscreen-todo-matrix-plan.md)
 - Implementation plan v1.2.0 (multiple Jira accounts): [plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md](plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md)
 - Interactive prototype: [prototype/panel-prototype.html](prototype/panel-prototype.html)
@@ -51,6 +62,7 @@ Switch between accounts and saved presets from the menu (or ⌘1–⌘9):
 - [x] v1.2.0: multiple Jira accounts, per-account presets/axes, "+ New preset…" menu, axis labels show mapped fields — spec → plan → implement
 - [x] v1.3.1: higher-contrast canvas; large upper-case zone labels that never overlap task titles (spec D30–D31)
 - [x] v1.3.0 (spec; Swift verified on Linux only, run the manual checklist on a Mac): stack marker for coincident tasks, 3D cones at the axis tips, effort fallback from logged time / Start → Due timeline (hours or days)
+- [ ] v1.4.0: Glance Lite iPhone PWA + Cloudflare Worker (spec draft → plan → implement)
 - [ ] Later: combine multiple fields per axis; editable scoring; signed + notarized release; Homebrew cask
 
 # Build & run
