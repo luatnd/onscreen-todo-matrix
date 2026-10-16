@@ -35,6 +35,7 @@ struct SettingsView: View {
         .sheet(item: $vm.newPreset) { request in
             NewPresetSheet(model: model, request: request, onCreated: onDone)
         }
+        .sheet(isPresented: $vm.showPhone) { PhoneSendSheet(model: model) }
     }
 
     private var setupHeader: some View {
@@ -99,6 +100,8 @@ struct GeneralTab: View {
             )) {
                 Text("1 min").tag(1); Text("5 min").tag(5); Text("15 min").tag(15); Text("Off").tag(0)
             }
+            Button("Send to phone…") { vm.showPhone = true }
+                .disabled(model.config.presets.isEmpty || model.config.accounts.isEmpty)
             if !vm.generalError.isEmpty { Text(vm.generalError).foregroundStyle(.red) }
             if model.configWasCorrupt {
                 Text("Your previous config file was unreadable and was saved as config.json.bak.")
