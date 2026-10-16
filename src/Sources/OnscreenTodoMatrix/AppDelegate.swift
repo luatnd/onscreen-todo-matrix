@@ -88,7 +88,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         updateIcon(warning: false)
         let menu = NSMenu()
-        menu.addItem(withTitle: "Show / Hide Panel", action: #selector(togglePanel), keyEquivalent: "").target = self
+        let toggle = menu.addItem(withTitle: "Show / Hide Panel", action: #selector(togglePanel), keyEquivalent: "")
+        toggle.target = self
+        toggle.setShortcut(for: .togglePanel) // shows the user's global hotkey (⌥Space by default) and follows changes
         menu.addItem(withTitle: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
         menu.addItem(.separator())
