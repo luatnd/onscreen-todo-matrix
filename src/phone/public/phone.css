@@ -1,10 +1,22 @@
 html, body { overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
 #pn { height: 100dvh; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; }
 #cv { touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
-.bar { flex-wrap: wrap; gap: 6px; }
-.bar button { min-width: 36px; min-height: 36px; }
+.bar { position: relative; height: 48px; flex-wrap: nowrap; gap: 6px; padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left)); }
+#pwrap { position: static; flex: 1 1 auto; min-width: 0; }
+#pbtn { max-width: 100%; min-width: 0; min-height: 36px; padding: 4px 12px; font-size: 14px; border-radius: 18px; }
+#pbtn .lbl { min-width: 0; }
+.bar .sp { flex: 0 1 auto; min-width: 0; gap: 0; }
+#sync { font-size: 11px; color: #6b7895; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 84px; margin-right: 4px; }
+@media (max-width: 359px) { #sync { display: none; } }
+.bar button { min-width: 44px; min-height: 44px; font-size: 20px; flex: none; }
+#pbtn { flex: 0 1 auto; }
+#pmenu { top: 100%; left: 8px; right: 8px; min-width: 0; max-height: calc(100dvh - env(safe-area-inset-top) - 48px - env(safe-area-inset-bottom) - 16px); font-size: 16px; overscroll-behavior: contain; }
+#pmenu .pi { padding: 12px 14px; min-height: 44px; box-sizing: border-box; }
+#pmenu .ph { font-size: 12px; padding: 10px 14px 4px; }
+#pmenu .pf { font-size: 12px; padding: 6px 14px 8px; }
+#pmenu .sc { font-size: 13px; }
 #q { display: none !important; }
-#qs { right: 8px; left: 8px; width: auto; max-height: 70dvh; overflow: auto; }
+#qs { top: 8px; right: 8px; left: 8px; width: auto; max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 72px); overflow: auto; }
 #qs [data-k="panelOpacity"], #qs [data-k="alwaysOnTop"] { display: none; }
 #qs .r:has([data-k="panelOpacity"]), #qs .r:has([data-k="alwaysOnTop"]), #qs .foot { display: none; }
 #qs .seg b { padding: 6px 10px; }
