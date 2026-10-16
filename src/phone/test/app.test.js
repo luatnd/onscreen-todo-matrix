@@ -84,6 +84,7 @@ describe('runtime', () => {
   it('401 on refresh -> sign-in banner + account error; keeps data', async () => {
     let fail = false;
     const { app, rendered } = await ready({ myself: async () => ({}), search: async () => { if (fail) throw new Unauthorized('x'); return { issues, truncated: false }; } });
+    await new Promise((r) => setTimeout(r, 30)); // let the first refresh finish (busy flag)
     fail = true; await app.refresh();
     const s = rendered.at(-1);
     expect(s.status.banner).toMatch(/sign-in failed/);
