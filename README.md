@@ -2,6 +2,20 @@
 
 **Glance — Onscreen Todo Matrix** (app: `Glance.app`; repo/internal name: `onscreen-todo-matrix`) is an open-source macOS floating panel that shows your Jira Cloud issues as a 3D priority space (Value × Effort × Urgency). Press ⌥Space for a 2-second look at what to do next, what's on fire, and the overall shape of your workload.
 
+## The idea in 30 seconds
+
+You may know the **Eisenhower matrix**: sort tasks into four boxes by *urgent* vs *important*. It is a great idea, but a flat 2×2 hides something every real to-do list has: **how big the task is**. Glance adds that third dimension, so "important and urgent but takes three weeks" no longer looks the same as "important and urgent, ten minutes".
+
+| | Eisenhower | Glance |
+|---|---|---|
+| Axes | Urgent × Important | **Value** × **Effort** × **Urgency** |
+| Data | Sorted by hand on paper | Pulled live from your Jira issues |
+| Answer | Do / Plan / Delegate / Delete | The four floor zones, numbered **1 → 4** in the order to tackle them |
+
+- **What** — a small floating panel that plots your Jira issues in 3D. Left/right = value, depth = effort, height = urgency. Gold ①②③ dots are the best next tasks; red glow = on fire.
+- **Why** — a Jira list shows *everything* and ranks *nothing*. Glance makes the priority visible without reading a single ticket, and the zone numbers tell you where to start: **1 Quick wins** (high value, low effort), **2 Major projects**, **3 Fill-ins**, **4 Thankless**.
+- **When** — press ⌥Space whenever you ask "what should I do now?": start of the day, after a meeting, between tasks, before sprint planning. It is a 2-second glance, not another tool to maintain; your Jira stays the source of truth (Glance only reads it).
+
 <p align="center"><img src="assets/glance-demo.png" alt="Glance — your Jira issues as a 3D priority space" width="900"></p>
 
 *What you see (fictional "Acme" demo data):*
