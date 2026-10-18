@@ -104,7 +104,7 @@ final class ClientLog {
         await m.refresh(.manual)
         #expect(api.searchCalls.count == 1)
         #expect(api.searchCalls[0].jql == JQLPreset.myOpenWork.jql)
-        #expect(api.searchCalls[0].fields == ["summary", "status", "priority", "duedate", "cf_value", "cf_sp"])
+        #expect(api.searchCalls[0].fields == ["summary", "status", "priority", "duedate", "parent", "issuetype", "cf_value", "cf_sp"])
         #expect(api.searchCalls[0].cap == 500)
         #expect(m.renderState.tasks.map(\.key) == ["A-1"])
         #expect(m.renderState.tasks[0].rank == 1)
@@ -126,7 +126,7 @@ final class ClientLog {
         #expect(clients.calls.last?.email == "me@corp.com")
         #expect(clients.calls.last?.token == "ctok")
         #expect(api.searchCalls[0].jql == "project = CORP")
-        #expect(api.searchCalls[0].fields == ["summary", "status", "priority", "duedate", "customfield_200", "customfield_201"])
+        #expect(api.searchCalls[0].fields == ["summary", "status", "priority", "duedate", "parent", "issuetype", "customfield_200", "customfield_201"])
         #expect(m.renderState.tasks[0].url == "https://corp.atlassian.net/browse/C-1")
         #expect(m.renderState.tasks[0].value == 0.5)
         #expect(m.issueURL(key: "C-1")?.absoluteString == "https://corp.atlassian.net/browse/C-1")
@@ -140,8 +140,8 @@ final class ClientLog {
         api.searchResult = .success(SearchResult(issues: []))
         let m = makeModel(config: c)
         await m.refresh(.manual)
-        #expect(api.searchCalls[0].fields == ["summary", "status", "priority", "duedate", "cf_value", "timeoriginalestimate",
-                                              "cf_start", "timespent", "timeestimate", "issuetype"])
+        #expect(api.searchCalls[0].fields == ["summary", "status", "priority", "duedate", "parent", "issuetype", "cf_value", "timeoriginalestimate",
+                                              "cf_start", "timespent", "timeestimate"])
     }
 
     @Test func secondRefreshFlagsChangedTasks() async {

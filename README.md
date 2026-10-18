@@ -54,6 +54,7 @@ Design: [specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md](specs/arch-2
   - [v1.3.0 — stacked tasks, axis cones, effort fallback](specs/arch-20261013-onscreen-todo-matrix-design-v1.3.0.md)
   - [v1.3.1 — readability: higher contrast, larger zone labels](specs/arch-20261014-onscreen-todo-matrix-design-v1.3.1.md)
   - [v1.4.0 — Glance Lite iPhone PWA](specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md)
+  - [v1.5.0 — epics, parent-aware search, discoverable search](specs/arch-20261018-onscreen-todo-matrix-design-v1.5.0.md)
 - Implementation plan v1: [plans/arch-20261012-onscreen-todo-matrix-plan.md](plans/arch-20261012-onscreen-todo-matrix-plan.md)
 - Implementation plan v1.2.0 (multiple Jira accounts): [plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md](plans/arch-20261013-onscreen-todo-matrix-plan-v1.2.0.md)
 - Interactive prototype: [prototype/panel-prototype.html](prototype/panel-prototype.html)
@@ -70,6 +71,7 @@ Design: [specs/arch-20261016-onscreen-todo-matrix-design-v1.4.0.md](specs/arch-2
 - [x] v1.3.1: higher-contrast canvas; large upper-case zone labels that never overlap task titles (spec D30–D31)
 - [x] v1.3.0 (spec; Swift verified on Linux only, run the manual checklist on a Mac): stack marker for coincident tasks, 3D cones at the axis tips, effort fallback from logged time / Start → Due timeline (hours or days)
 - [x] v1.4.0: Glance Lite iPhone PWA + Cloudflare Worker + Send to phone… (needs your Cloudflare deploy and an iPhone check)
+- [x] v1.5.0: hide epics covered by children, parent shown on card + searchable, 🔍 search button (Mac + Lite)
 - [ ] Later: combine multiple fields per axis; editable scoring; signed + notarized release; Homebrew cask
 
 # Build & run

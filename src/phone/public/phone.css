@@ -15,7 +15,11 @@ html, body { overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
 #pmenu .ph { font-size: 12px; padding: 10px 14px 4px; }
 #pmenu .pf { font-size: 12px; padding: 6px 14px 8px; }
 #pmenu .sc { font-size: 13px; }
-#q { display: none !important; }
+#bar.searching #pwrap, #bar.searching #bR, #bar.searching #bQ, #bar.searching #bS, #bar.searching #bSearch { display: none; }
+#bar.searching #q { flex: 1 1 auto; min-width: 0; width: auto; font-size: 16px; padding: 8px 10px; }
+#bar.searching .sp { margin-left: 0; }
+#bar.searching #sync { display: block; }
+#qx { min-width: 44px; }
 #qs { top: 8px; right: 8px; left: 8px; width: auto; max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 72px); overflow: auto; }
 #qs [data-k="panelOpacity"], #qs [data-k="alwaysOnTop"] { display: none; }
 #qs .r:has([data-k="panelOpacity"]), #qs .r:has([data-k="alwaysOnTop"]), #qs .foot { display: none; }

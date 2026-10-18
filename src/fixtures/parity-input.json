@@ -276,6 +276,145 @@
      }
     }
    ]
-  }
- ]
+  },
+    {
+      "name": "D epics and parents",
+      "axes": {
+        "value": {
+          "mapping": {
+            "option": {
+              "fieldId": "customfield_10001",
+              "levels": {
+                "Big": 5,
+                "Medium": 2.5,
+                "Small": 0
+              }
+            }
+          },
+          "missingDefault": 0.5
+        },
+        "effort": {
+          "mapping": {
+            "number": {
+              "fieldId": "timeoriginalestimate",
+              "invert": false
+            }
+          },
+          "missingDefault": 0.5,
+          "timeline": {
+            "startFieldId": "customfield_10015",
+            "endFieldId": "duedate",
+            "unit": "hours"
+          }
+        },
+        "urgency": {
+          "mapping": {
+            "option": {
+              "fieldId": "priority",
+              "levels": {
+                "Highest": 5,
+                "High": 3.75,
+                "Medium": 2.5,
+                "Low": 1.25,
+                "Lowest": 0
+              }
+            }
+          },
+          "missingDefault": 0.5
+        }
+      },
+      "issues": [
+        {
+          "key": "PA-40",
+          "fields": {
+            "summary": "Clavis project deal",
+            "status": {
+              "name": "In Progress"
+            },
+            "priority": {
+              "name": "High"
+            },
+            "issuetype": {
+              "name": "Epic",
+              "hierarchyLevel": 1
+            },
+            "duedate": "2026-10-30"
+          }
+        },
+        {
+          "key": "PA-43",
+          "fields": {
+            "summary": "Find out collab solution",
+            "status": {
+              "name": "To Do"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "issuetype": {
+              "name": "Task",
+              "hierarchyLevel": 0
+            },
+            "parent": {
+              "key": "PA-40",
+              "fields": {
+                "summary": "Clavis project deal",
+                "issuetype": {
+                  "name": "Epic",
+                  "hierarchyLevel": 1
+                }
+              }
+            },
+            "timeoriginalestimate": 14400,
+            "duedate": "2026-10-22"
+          }
+        },
+        {
+          "key": "PA-50",
+          "fields": {
+            "summary": "Lonely epic",
+            "status": {
+              "name": "In Progress"
+            },
+            "priority": {
+              "name": "High"
+            },
+            "issuetype": {
+              "name": "Epic",
+              "hierarchyLevel": 1
+            },
+            "duedate": "2026-10-30"
+          }
+        },
+        {
+          "key": "PA-61",
+          "fields": {
+            "summary": "Orphaned child",
+            "status": {
+              "name": "To Do"
+            },
+            "priority": {
+              "name": "Medium"
+            },
+            "issuetype": {
+              "name": "Task",
+              "hierarchyLevel": 0
+            },
+            "parent": {
+              "key": "PA-99",
+              "fields": {
+                "summary": "Epic outside the result",
+                "issuetype": {
+                  "name": "Epic",
+                  "hierarchyLevel": 1
+                }
+              }
+            },
+            "timeoriginalestimate": 14400,
+            "duedate": "2026-10-22"
+          }
+        }
+      ]
+    }
+  ]
 }

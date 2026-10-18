@@ -154,7 +154,7 @@ public enum AxisMapper {
                 if let lo = all.min(), let hi = all.max() { ranges[.effort] = lo...hi }
             }
         }
-        return issues.map { issue in
+        let mapped: [MappedTask] = issues.map { issue in
             var values: [Axis: Double] = [:]
             var missing = MissingFlags()
             var derivedEffort: DerivedEffort?
@@ -183,9 +183,31 @@ public enum AxisMapper {
                 due: issue.fields["duedate"]?.stringValue,
                 url: site.appendingPathComponent("browse").appendingPathComponent(issue.key).absoluteString,
                 value: values[.value]!, effort: values[.effort]!, urgency: values[.urgency]!,
-                missing: missing, derived: derivedEffort
+                missing: missing, derived: derivedEffort,
+                parent: parent(of: issue), isEpic: isEpic(issue)
             )
         }
+        return hideCoveredEpics(mapped)
+    }
+
+    /// D36: `fields.parent` → key + summary; nil when absent.
+    static func parent(of issue: JiraIssue) -> TaskParent? {
+        guard case .object(let p)? = issue.fields["parent"], let key = p["key"]?.stringValue else { return nil }
+        let summary: String?
+        if case .object(let f)? = p["fields"] { summary = f["summary"]?.stringValue } else { summary = nil }
+        return TaskParent(key: key, summary: summary ?? key)
+    }
+
+    /// D36: issuetype is named "Epic" or sits at hierarchy level >= 1.
+    static func isEpic(_ issue: JiraIssue) -> Bool {
+        guard case .object(let t)? = issue.fields["issuetype"] else { return false }
+        return t["name"]?.stringValue == "Epic" || (t["hierarchyLevel"]?.numberValue ?? 0) >= 1
+    }
+
+    /// D37: drop every epic that has at least one other issue in the result as a direct child.
+    static func hideCoveredEpics(_ tasks: [MappedTask]) -> [MappedTask] {
+        let parents = Set(tasks.compactMap { $0.parent?.key })
+        return tasks.filter { !($0.isEpic && parents.contains($0.key)) }
     }
 }
 

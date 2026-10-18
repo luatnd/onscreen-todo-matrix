@@ -56,3 +56,10 @@ test('axisLabels: object of optional strings (omitted key = not mapped)', () => 
   delete bad.axisLabels;
   expect(validateState(bad)).toContain('axisLabels must be an object');
 });
+test('optional task parent must be {key, summary}', () => {
+  const ok = structuredClone(fixture);
+  ok.tasks[0].parent = { key: 'PA-40', summary: 'Clavis project deal' };
+  expect(validateState(ok)).toEqual([]);
+  ok.tasks[0].parent = { key: 1 };
+  expect(validateState(ok)).toContain('tasks[0].parent must have string key and summary');
+});

@@ -90,6 +90,22 @@ function derivedSeconds(issue, tl) {
   return { seconds: days * WORKDAY, kind: 'timeline', from: str(f[tl.startFieldId]), to: str(f[tl.endFieldId]) };
 }
 
+// D36: fields.parent -> {key, summary}; undefined when absent.
+function parentOf(f) {
+  const p = f.parent;
+  if (!p || typeof p !== 'object' || typeof p.key !== 'string') return undefined;
+  const s = p.fields && p.fields.summary;
+  return { key: p.key, summary: typeof s === 'string' ? s : p.key };
+}
+// D36: issuetype named "Epic" or hierarchy level >= 1.
+const isEpic = (f) => !!f.issuetype && typeof f.issuetype === 'object' && (f.issuetype.name === 'Epic' || (f.issuetype.hierarchyLevel ?? 0) >= 1);
+
+// D37: drop every epic that has at least one other issue in the result as a direct child.
+function hideCoveredEpics(rows) {
+  const parents = new Set(rows.map((r) => r.parent && r.parent.key).filter(Boolean));
+  return rows.filter((r) => !(r.epic && parents.has(r.t.key))).map((r) => r.t);
+}
+
 export function mapIssues(issues, axes, site, today) {
   const ranges = {};
   for (const a of AXES) if (kindOf(axes[a].mapping) === 'number') ranges[a] = autoRange(spec(axes[a].mapping).fieldId, issues);
@@ -104,7 +120,7 @@ export function mapIssues(issues, axes, site, today) {
       if (all.length) ranges.effort = [Math.min(...all), Math.max(...all)];
     }
   }
-  return issues.map((issue) => {
+  const rows = issues.map((issue) => {
     const values = {}, missing = {};
     let derivedEffort;
     for (const a of AXES) {
@@ -131,8 +147,10 @@ export function mapIssues(issues, axes, site, today) {
     const p = optionLabel(f.priority); if (p != null) t.priority = p;
     if (typeof f.duedate === 'string') t.due = f.duedate;
     if (derivedEffort) t.derived = derivedEffort;
-    return t;
+    const parent = parentOf(f); if (parent) t.parent = parent;
+    return { t, parent, epic: isEpic(f) };
   });
+  return hideCoveredEpics(rows);
 }
 
 export const score = (t) => (t.value * (0.5 + t.urgency)) / (0.3 + t.effort);
@@ -148,10 +166,10 @@ export const ACCOUNT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ec4899', '#8b5
 
 // field ids the search must request (summary/status/etc. + mapped fields + fallback fields)
 export function fieldIds(axes) {
-  const ids = new Set(['summary', 'status', 'priority', 'duedate']);
+  const ids = new Set(['summary', 'status', 'priority', 'duedate', 'parent', 'issuetype']);
   for (const a of AXES) if (axes[a].mapping) ids.add(spec(axes[a].mapping).fieldId);
   const tl = timelineFallback(axes.effort);
-  if (tl) [tl.startFieldId, tl.endFieldId, 'timespent', 'timeestimate', 'issuetype'].filter(Boolean).forEach((x) => ids.add(x));
+  if (tl) [tl.startFieldId, tl.endFieldId, 'timespent', 'timeestimate'].filter(Boolean).forEach((x) => ids.add(x));
   return [...ids];
 }
 

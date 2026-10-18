@@ -9,6 +9,7 @@ import { seal, makeCode } from './src/crypto.js';
 const PORT = Number(process.env.PORT || 8787);
 const input = JSON.parse(readFileSync(new URL('../fixtures/parity-input.json', import.meta.url)));
 const caseA = input.cases[0];
+const caseD = input.cases.find((c) => c.name.startsWith('D ')); // epics + parents (D36/D37)
 const TOKEN = 'test-token', EMAIL = 'me@acme.test';
 
 const realFetch = globalThis.fetch;
@@ -19,7 +20,7 @@ globalThis.fetch = async (u, init) => {
   if (auth !== 'Basic ' + Buffer.from(`${EMAIL}:${TOKEN}`).toString('base64')) return new Response('{}', { status: 401 });
   const j = (o) => new Response(JSON.stringify(o), { headers: { 'content-type': 'application/json' } });
   if (url.pathname.endsWith('/myself')) return j({ displayName: 'Me', accountId: '1' });
-  if (url.pathname.endsWith('/search/jql')) return j({ issues: caseA.issues, isLast: true });
+  if (url.pathname.endsWith('/search/jql')) return j({ issues: [...caseA.issues, ...caseD.issues], isLast: true });
   return new Response('{}', { status: 404 });
 };
 

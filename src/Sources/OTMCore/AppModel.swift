@@ -414,7 +414,7 @@ public final class AppModel: ObservableObject {
     }
 
     private func fetchFields() -> [String] {
-        var out = ["summary", "status", "priority", "duedate"]
+        var out = ["summary", "status", "priority", "duedate", "parent", "issuetype"]
         for axis in Axis.allCases {
             if let id = activeAccount?.axes[axis].mapping?.fieldId, !out.contains(id) { out.append(id) }
         }

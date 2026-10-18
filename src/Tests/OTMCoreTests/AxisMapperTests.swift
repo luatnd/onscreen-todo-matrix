@@ -183,6 +183,29 @@ private func norm(_ raw: JSONValue?, _ m: AxisMapping, range: ClosedRange<Double
         let m = AxisMapping.option(fieldId: "priority", levels: ["High": 4])
         #expect(AxisMapper.unmappedLabels(issues: issues, mapping: m) == ["Blocker", "Trivial"])
     }
+
+    // MARK: Epics and parents (D36, D37)
+
+    private func epicIssue(_ key: String, epic: Bool = true, parent: String? = nil) -> JiraIssue {
+        var f: [String: JSONValue] = ["summary": .string("S \(key)"),
+            "issuetype": .object(["name": .string(epic ? "Epic" : "Task"), "hierarchyLevel": .number(epic ? 1 : 0)])]
+        if let parent { f["parent"] = .object(["key": .string(parent), "fields": .object(["summary": .string("P \(parent)")])]) }
+        return JiraIssue(key: key, fields: f)
+    }
+
+    @Test func parentIsExtractedAndEpicFlagged() {
+        let out = AxisMapper.map(issues: [epicIssue("E-1", epic: false, parent: "E-9"), epicIssue("E-2")], axes: axes(), site: site, now: now, calendar: utc)
+        #expect(out[0].parent == TaskParent(key: "E-9", summary: "P E-9"))
+        #expect(!out[0].isEpic)
+        #expect(out[1].parent == nil && out[1].isEpic)
+    }
+
+    @Test func epicWithChildIsHiddenOthersStay() {
+        let issues = [epicIssue("E-1"), epicIssue("T-1", epic: false, parent: "E-1"),
+                      epicIssue("E-2"), epicIssue("T-2", epic: false, parent: "E-7")]
+        let keys = AxisMapper.map(issues: issues, axes: axes(), site: site, now: now, calendar: utc).map(\.key)
+        #expect(keys == ["T-1", "E-2", "T-2"])
+    }
 }
 
 @Suite struct DefaultMappingsTests {
