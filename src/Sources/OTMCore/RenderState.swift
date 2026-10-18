@@ -12,6 +12,7 @@ public struct RenderTask: Codable, Equatable, Sendable {
     public var urgency: Double
     public var missing: MissingFlags
     public var derived: DerivedEffort?
+    public var parent: TaskParent?
     public var score: Double
     public var rank: Int?
     public var fire: Bool
@@ -117,7 +118,7 @@ public enum RenderStateBuilder {
             }
             return RenderTask(key: t.key, summary: t.summary, status: t.status, priority: t.priority, due: t.due,
                               url: t.url, value: t.value, effort: t.effort, urgency: t.urgency, missing: t.missing,
-                              derived: t.derived, score: s.score, rank: s.rank, fire: s.fire, changed: changed)
+                              derived: t.derived, parent: t.parent, score: s.score, rank: s.rank, fire: s.fire, changed: changed)
         }
         let accounts = config.accounts.enumerated().map { i, a in
             RenderAccount(id: a.id, name: a.name, color: AccountPalette.color(at: i), error: accountErrors.contains(a.id))

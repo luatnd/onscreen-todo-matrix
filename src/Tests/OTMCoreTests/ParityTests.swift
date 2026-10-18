@@ -25,7 +25,7 @@ import Testing
                 let t = s.task
                 return RenderTask(key: t.key, summary: t.summary, status: t.status, priority: t.priority, due: t.due,
                                   url: t.url, value: t.value, effort: t.effort, urgency: t.urgency, missing: t.missing,
-                                  derived: t.derived, score: s.score, rank: s.rank, fire: s.fire, changed: false)
+                                  derived: t.derived, parent: t.parent, score: s.score, rank: s.rank, fire: s.fire, changed: false)
             }
             return Out(name: c.name, tasks: rendered)
         }

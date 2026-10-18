@@ -178,6 +178,16 @@ public struct MissingFlags: Codable, Equatable, Sendable {
     }
 }
 
+/// The issue's parent (epic or parent issue) as Jira returns it.
+public struct TaskParent: Codable, Equatable, Sendable {
+    public var key: String
+    public var summary: String
+    public init(key: String, summary: String) {
+        self.key = key
+        self.summary = summary
+    }
+}
+
 public struct MappedTask: Codable, Equatable, Sendable {
     public var key: String
     public var summary: String
@@ -190,10 +200,16 @@ public struct MappedTask: Codable, Equatable, Sendable {
     public var urgency: Double
     public var missing: MissingFlags
     public var derived: DerivedEffort?
+    public var parent: TaskParent?
+    /// D36: not sent to the chart; used to hide an epic covered by its children (D37).
+    public var isEpic = false
+    private enum CodingKeys: String, CodingKey {
+        case key, summary, status, priority, due, url, value, effort, urgency, missing, derived, parent
+    }
 
     public init(key: String, summary: String, status: String, priority: String?, due: String?, url: String,
                 value: Double, effort: Double, urgency: Double, missing: MissingFlags = MissingFlags(),
-                derived: DerivedEffort? = nil) {
+                derived: DerivedEffort? = nil, parent: TaskParent? = nil, isEpic: Bool = false) {
         self.key = key
         self.summary = summary
         self.status = status
@@ -205,5 +221,7 @@ public struct MappedTask: Codable, Equatable, Sendable {
         self.urgency = urgency
         self.missing = missing
         self.derived = derived
+        self.parent = parent
+        self.isEpic = isEpic
     }
 }

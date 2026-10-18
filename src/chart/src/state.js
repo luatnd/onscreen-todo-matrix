@@ -10,6 +10,7 @@ export function validateState(s) {
     if (typeof t.key !== 'string') e.push(`tasks[${i}].key must be a string`);
     if (typeof t.summary !== 'string') e.push(`tasks[${i}].summary must be a string`);
     for (const k of ['value', 'effort', 'urgency']) if (!unit(t[k])) e.push(`tasks[${i}].${k} must be a number in 0..1`);
+    if (t.parent != null && (!isObj(t.parent) || typeof t.parent.key !== 'string' || typeof t.parent.summary !== 'string')) e.push(`tasks[${i}].parent must have string key and summary`);
     if (!isObj(t.missing)) e.push(`tasks[${i}].missing must be an object`);
     if (typeof t.score !== 'number') e.push(`tasks[${i}].score must be a number`);
     if (t.derived != null) {

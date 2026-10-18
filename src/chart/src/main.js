@@ -3,6 +3,7 @@ import { DEFAULT_CAMERA, FACTORY_VIEW, clampView, normalizeYaw } from './project
 import { drawScene } from './render.js';
 import { chooseCardCorner } from './labels.js';
 import { validateState } from './state.js';
+import { matchesQuery, normalizeQuery, matchLabel } from './search.js';
 import { stackKey, byScoreThenKey } from './stacks.js';
 import { describeDerived, tipSuffix } from './derived.js';
 import { buttonLabel, initialHighlight, menuKey, menuRows, messageFor, rowAction, safeColor, shortcutPresetId } from './presetMenu.js';
@@ -31,7 +32,7 @@ const saveLastViewSoon = () => {
 const S = () => st.state.settings;
 const def = () => ({ yaw: st.state.view.yaw, pitch: st.state.view.pitch });
 const cam = () => ({ yaw: st.yaw, pitch: st.pitch, ...DEFAULT_CAMERA, fit: st.fit });
-const matches = (t) => !st.query || `${t.key} ${t.summary}`.toLowerCase().includes(st.query);
+const matches = (t) => matchesQuery(t, st.query);
 // const byScore = () => [...st.tasks].sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
 const byScore = () => [...st.tasks].sort(byScoreThenKey);
 /** Members of the stack holding key (D27), in stack order; only search matches unless none match. */
@@ -155,6 +156,7 @@ const escapeHTML = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&l
 
 function updateSync() {
   const at = st.state && st.state.status.syncedAt ? Date.parse(st.state.status.syncedAt) : NaN;
+  if (st.query) { $('sync').textContent = matchLabel(st.tasks.filter(matches).length); return; }
   if (Number.isNaN(at)) { $('sync').textContent = 'not synced'; return; }
   const s = Math.round((Date.now() - at) / 1000);
   $('sync').textContent = s < 5 ? 'synced just now' : s < 60 ? `synced ${s}s ago` : s < 3600 ? `synced ${Math.round(s / 60)}m ago` : `synced ${Math.round(s / 3600)}h ago`;
@@ -168,7 +170,7 @@ function select(key, redraw = true) {
   const t = key && st.tasks.find((x) => x.key === key);
   if (!t) { card.style.display = 'none'; st.sel = null; if (redraw) draw(); return; }
   const f = (v) => (v * 5).toFixed(1);
-  card.innerHTML = `<div class="k">${escapeHTML(t.key)} · ${escapeHTML(t.status || '')}</div><b>${escapeHTML(t.summary)}</b>
+  card.innerHTML = `<div class="k">${escapeHTML(t.key)} · ${escapeHTML(t.status || '')}</div>${t.parent ? `<div class="par">${escapeHTML(t.parent.summary)} ›</div>` : ''}<b>${escapeHTML(t.summary)}</b>
     <div class="row" style="margin-top:4px"><span>Value <b>${f(t.value)}</b></span><span>Ease <b>${f(1 - t.effort)}</b></span><span>Urgency <b>${f(t.urgency)}</b></span></div>
     <div class="row"><span>Priority <b>${escapeHTML(t.priority || '—')}</b></span><span>Due <b>${escapeHTML(t.due || '—')}</b></span>${t.rank ? `<span style="color:#f4c542">#${t.rank} next</span>` : ''}</div>
     ${t.derived ? `<div class="row"><span>${escapeHTML(describeDerived(t.derived))}</span></div>` : ''}
@@ -227,12 +229,15 @@ function toast(s) {
 
 // ---------- search ----------
 const q = $('q');
-function openSearch() { q.style.display = 'inline-block'; q.focus(); q.select(); }
+function openSearch() { q.style.display = 'inline-block'; $('qx').style.display = 'inline-block'; $('bar').classList.add('searching'); q.focus(); q.select(); }
 // function closeSearch() { q.value = ''; st.query = ''; q.style.display = 'none'; $('pn').focus(); draw(); }
 // q.oninput = () => { st.query = q.value.toLowerCase().trim(); draw(); };
 // The card's "i of n" depends on the search, so rebuild it (select) before drawing.
-function closeSearch() { q.value = ''; st.query = ''; q.style.display = 'none'; $('pn').focus(); if (st.sel) select(st.sel, false); draw(); }
-q.oninput = () => { st.query = q.value.toLowerCase().trim(); if (st.sel) select(st.sel, false); draw(); };
+function closeSearch() { q.value = ''; st.query = ''; q.style.display = 'none'; $('qx').style.display = 'none'; $('bar').classList.remove('searching'); updateSync(); $('pn').focus(); if (st.sel) select(st.sel, false); draw(); }
+const searchOpen = () => q.style.display === 'inline-block';
+q.oninput = () => { st.query = normalizeQuery(q.value); updateSync(); if (st.sel) select(st.sel, false); draw(); };
+$('bSearch').onclick = () => (searchOpen() ? closeSearch() : openSearch());
+$('qx').onclick = closeSearch;
 q.onkeydown = (e) => {
   if (e.key === 'Escape') { e.preventDefault(); closeSearch(); }
   if (e.key === 'Enter') { e.preventDefault(); const m = byScore().find(matches); if (m) select(m.key); $('pn').focus(); }
@@ -366,13 +371,14 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     e.preventDefault();
     if (qs.style.display === 'block') return toggleQS();
-    if (q.style.display === 'inline-block') return closeSearch();
+    if (searchOpen()) return closeSearch();
     if (st.sel) return select(null);
     return post({ type: 'hide' });
   }
   if ((m && k === 'o') || (e.key === 'Enter' && document.activeElement.tagName !== 'BUTTON')) { e.preventDefault(); return openIssue(); }
   if (m && k === 'r') { e.preventDefault(); return post({ type: 'refetch' }); }
   if (m && k === 'f') { e.preventDefault(); return openSearch(); }
+  if (!m && e.key === '/' && !['INPUT', 'SELECT'].includes(document.activeElement.tagName)) { e.preventDefault(); return openSearch(); }
   if (m && e.key === ',') { e.preventDefault(); return post({ type: 'openSettings' }); }
   if (!m && k === 'r') { resetView(); return; }
   if (!m && k === 'q') return toggleQS();

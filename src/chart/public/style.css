@@ -20,6 +20,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0e17; col
 #pmenu .pi.hi .warn { color: #fff3c4; }
 #pmenu .sep { height: 1px; background: #2b3550; margin: 4px 0; }
 #pmenu .pf { padding: 3px 10px 5px; color: #8fb8ff; font-size: 10px; border-bottom: 1px solid #2b3550; margin-bottom: 3px; }
+#qx { display: none; margin-left: -4px; }
+#card .par { color: #8a96ad; font-size: 10px; }
 #q { display: none; background: #1e2636; border: 1px solid #3b82f6; color: #e8ecf4; border-radius: 5px; padding: 2px 6px; font-size: 11px; width: 170px; outline: none; }
 .bar .sp { margin-left: auto; display: flex; gap: 10px; align-items: center; }
 .bar button { background: none; border: none; color: #9aa6bd; cursor: pointer; font-size: 13px; padding: 0 2px; }

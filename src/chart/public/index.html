@@ -9,14 +9,16 @@
 </head>
 <body>
 <div id="pn" tabindex="0">
-  <div class="bar">
+  <div class="bar" id="bar">
     <div id="pwrap">
       <button id="pbtn" title="Preset (P)"><span class="dot"></span><span class="lbl"></span><span class="car">▾</span></button>
       <div id="pmenu" role="listbox"></div>
     </div>
-    <input id="q" placeholder="Search summary or key…" autocomplete="off" spellcheck="false">
+    <input id="q" placeholder="Search title, parent or key…" autocomplete="off" spellcheck="false">
+    <button id="qx" title="Close search (Esc)" aria-label="Close search">✕</button>
     <div class="sp">
       <span id="sync"></span>
+      <button id="bSearch" title="Search (⌘F or /)" aria-label="Search">🔍</button>
       <button id="bR" title="Refetch (⌘R)">⟳</button>
       <button id="bQ" title="Quick settings (Q)">◐</button>
       <button id="bS" title="Settings (⌘,)">⚙</button>

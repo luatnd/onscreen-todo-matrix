@@ -38,3 +38,12 @@ describe('buildState', () => {
     expect(s.axisLabels.urgency).toBe('priority');
   });
 });
+
+describe('epics (D36/D37)', () => {
+  it('hides a covered epic, keeps a lone epic and an orphaned child with its parent', () => {
+    const c = input.cases.find((x) => x.name.startsWith('D '));
+    const got = mapIssues(c.issues, c.axes, input.site, today);
+    expect(got.map((t) => t.key).sort()).toEqual(['PA-43', 'PA-50', 'PA-61']);
+    expect(got.find((t) => t.key === 'PA-43').parent).toEqual({ key: 'PA-40', summary: 'Clavis project deal' });
+  });
+});
