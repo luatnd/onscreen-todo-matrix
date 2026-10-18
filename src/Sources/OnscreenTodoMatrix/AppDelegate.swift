@@ -90,11 +90,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         let toggle = menu.addItem(withTitle: "Show / Hide Panel", action: #selector(togglePanel), keyEquivalent: "")
         toggle.target = self
+        toggle.image = NSImage(systemSymbolName: "rectangle.on.rectangle", accessibilityDescription: nil)
         toggle.setShortcut(for: .togglePanel) // shows the user's global hotkey (⌥Space by default) and follows changes
-        menu.addItem(withTitle: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
+        let refresh = menu.addItem(withTitle: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "")
+        refresh.target = self
+        refresh.image = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: nil)
+        let settings = menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        settings.target = self
+        settings.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit Glance", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quit = menu.addItem(withTitle: "Quit Glance", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        quit.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
         statusItem.menu = menu
     }
 
